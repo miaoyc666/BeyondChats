@@ -113,3 +113,18 @@ if (typeof window !== 'undefined') {
     );
   }
 }
+
+/**
+ * Export debug object for Vue components
+ */
+export const debug = {
+  setEnabled: setDebugMode,
+  isEnabled: isDebugMode,
+  log: debugLog,
+  info: debugInfo,
+  warn: debugWarn,
+  error: debugError,
+  success: debugSuccess,
+  performance: debugPerformance,
+  api: debugAPI,
+};

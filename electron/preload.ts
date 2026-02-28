@@ -11,6 +11,14 @@ const api = {
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   getAppPath: () => ipcRenderer.invoke('get-app-path'),
 
+  // Dev tools
+  openDevTools: () => ipcRenderer.invoke('open-dev-tools'),
+  closeDevTools: () => ipcRenderer.invoke('close-dev-tools'),
+
+  // WebView communication
+  sendToWebView: (webviewId: string, message: any) =>
+    ipcRenderer.invoke('send-to-webview', { webviewId, message }),
+
   // IPC send/receive for custom messages
   send: (channel: string, data: any) => {
     ipcRenderer.send(channel, data);

@@ -4,6 +4,7 @@ import { GeminiProvider } from '@/providers/gemini';
 import { QwenProvider } from '@/providers/qwen';
 import { DoubanProvider } from '@/providers/douban';
 import { YuanbaoProvider } from '@/providers/yuanbao';
+import { debugError, debugAPI, debugPerformance, debugSuccess } from '@/utils/debug';
 
 export class ProviderManager {
   private providers: Map<string, AIProvider> = new Map();

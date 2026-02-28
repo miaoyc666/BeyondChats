@@ -1,388 +1,210 @@
 <template>
-  <div class="settings-view">
-    <!-- Debug Mode Toggle Card -->
-    <el-card class="debug-card">
-      <template #header>
-        <div class="card-header">
-          <span>🐛 Debug Mode</span>
-          <el-switch v-model="debugModeEnabled" @change="toggleDebugMode" />
-        </div>
-      </template>
-      <div class="debug-info">
-        <p v-if="debugModeEnabled" class="debug-status">
-          ✅ Debug mode is <strong>ENABLED</strong>. Check browser console for detailed logs.
-        </p>
-        <p v-else class="debug-status">
-          ❌ Debug mode is <strong>DISABLED</strong>. 
-        </p>
-        <p class="debug-hint">
-          💡 Tip: In console, you can use:
-          <code>window.__debug.enable()</code> or 
-          <code>window.__debug.disable()</code>
-        </p>
+  <el-dialog
+    v-model="showSettings"
+    title="设置"
+    width="600px"
+    @close="goBack"
+  >
+    <!-- 开发者选项 -->
+    <div class="settings-section">
+      <h3>开发者选项</h3>
+      <div class="settings-item">
+        <span>Debug 模式</span>
+        <el-switch
+          v-model="debugMode"
+          @change="toggleDebugMode"
+        />
       </div>
-    </el-card>
+      <div v-if="debugMode" class="debug-info">
+        <p>Debug 模式已启用</p>
+        <el-button @click="openDevTools">打开开发者工具</el-button>
+      </div>
+    </div>
 
-    <el-card class="settings-card">
-      <template #header>
-        <div class="card-header">
-          <span>AI Configuration</span>
-          <el-button text type="primary" @click="saveAllSettings">
-            Save All
-          </el-button>
-        </div>
-      </template>
+    <!-- 布局设置 -->
+    <el-divider />
+    <div class="settings-section">
+      <h3>布局设置</h3>
+      <div class="settings-item">
+        <span>网格列数</span>
+        <el-select v-model="gridColumns" @change="updateGridColumns">
+          <el-option label="1 列" :value="1" />
+          <el-option label="2 列" :value="2" />
+          <el-option label="3 列" :value="3" />
+          <el-option label="4 列" :value="4" />
+        </el-select>
+      </div>
+      <div class="settings-item">
+        <span>间距 (px)</span>
+        <el-input-number v-model="gridGap" @change="updateGridGap" :min="4" :max="32" />
+      </div>
+    </div>
 
-      <el-tabs>
-        <el-tab-pane
-          v-for="ai in availableAIs"
-          :key="ai.id"
-          :label="ai.name"
+    <!-- AI 提供商管理 -->
+    <el-divider />
+    <div class="settings-section">
+      <h3>AI 提供商</h3>
+      <div class="provider-list">
+        <div
+          v-for="provider in providers"
+          :key="provider.id"
+          class="provider-item"
         >
-          <div class="settings-form">
-            <div class="form-group">
-              <label>{{ ai.name }} Configuration</label>
-              <el-form :model="formData[ai.id]" label-width="120px">
-                <el-form-item label="Enable">
-                  <el-switch
-                    v-model="formData[ai.id].enabled"
-                    @change="onToggleProvider(ai.id)"
-                  />
-                </el-form-item>
-
-                <el-form-item
-                  v-if="ai.id !== 'douban'"
-                  label="API Key"
-                >
-                  <el-input
-                    v-model="formData[ai.id].apiKey"
-                    type="password"
-                    placeholder="Enter your API key"
-                    show-password
-                  />
-                  <p class="help-text">
-                    Get your API key from the official website
-                  </p>
-                </el-form-item>
-
-                <el-form-item
-                  v-if="ai.id === 'douban'"
-                  label="Session Token"
-                >
-                  <el-input
-                    v-model="formData[ai.id].sessionToken"
-                    type="password"
-                    placeholder="Enter your session token"
-                    show-password
-                  />
-                  <p class="help-text">
-                    Get session token from browser DevTools
-                  </p>
-                </el-form-item>
-
-                <el-form-item v-if="ai.id !== 'yuanbao'" label="Base URL">
-                  <el-input
-                    v-model="formData[ai.id].baseUrl"
-                    placeholder="API base URL (optional)"
-                  />
-                </el-form-item>
-
-                <el-form-item label="Model">
-                  <el-input
-                    v-model="formData[ai.id].model"
-                    placeholder="Model name"
-                  />
-                </el-form-item>
-
-                <el-form-item>
-                  <el-button
-                    type="primary"
-                    @click="testConnection(ai.id)"
-                    :loading="testingProviders.has(ai.id)"
-                  >
-                    Test Connection
-                  </el-button>
-                  <el-button @click="saveSettings(ai.id)">
-                    Save Configuration
-                  </el-button>
-                </el-form-item>
-
-                <div
-                  v-if="testResults.has(ai.id)"
-                  class="test-result"
-                  :class="testResults.get(ai.id) ? 'success' : 'error'"
-                >
-                  <span>
-                    {{ testResults.get(ai.id) ? '✓ Connection successful' : '✗ Connection failed' }}
-                  </span>
-                </div>
-              </el-form>
-            </div>
-          </div>
-        </el-tab-pane>
-      </el-tabs>
-
-      <div class="settings-info">
-        <el-alert title="API Configuration Guide" type="info" :closable="false">
-          <template #default>
-            <ul class="guide-list">
-              <li>
-                <strong>ChatGPT:</strong> Get API key from
-                <a href="https://platform.openai.com/api-keys" target="_blank">
-                  OpenAI Platform
-                </a>
-              </li>
-              <li>
-                <strong>Gemini:</strong> Get API key from
-                <a href="https://aistudio.google.com" target="_blank">
-                  Google AI Studio
-                </a>
-              </li>
-              <li>
-                <strong>Qwen:</strong> Get API key from
-                <a href="https://dashscope.aliyun.com" target="_blank">
-                  Aliyun DashScope
-                </a>
-              </li>
-              <li>
-                <strong>Douban:</strong> Use web session token from browser
-              </li>
-              <li>
-                <strong>Yuanbao:</strong> Use Tencent Hunyuan API or web token
-              </li>
-            </ul>
-          </template>
-        </el-alert>
+          <img :src="provider.icon" :alt="provider.name" class="provider-icon" />
+          <span class="provider-name">{{ provider.name }}</span>
+          <el-switch
+            v-model="provider.isEnabled"
+            @change="updateProvider(provider.id, { isEnabled: provider.isEnabled })"
+          />
+        </div>
       </div>
-    </el-card>
-  </div>
+    </div>
+
+    <!-- 关于 -->
+    <el-divider />
+    <div class="settings-section">
+      <h3>关于</h3>
+      <p class="about-text">
+        <strong>BeyondChats</strong> - 多 AI 并排聊天工具<br />
+        <span>v{{ appVersion }}</span>
+      </p>
+    </div>
+
+    <template #footer>
+      <el-button @click="goBack">关闭</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { useAppStore } from '@/stores/app';
-import { providerManager } from '@/services/providerManager';
-import { setDebugMode, isDebugMode } from '@/utils/debug';
-import { ElMessage } from 'element-plus';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAppStore, useLayoutStore } from '@/stores';
+import { debug } from '@/utils/debug';
 
+const router = useRouter();
 const appStore = useAppStore();
-const debugModeEnabled = ref(isDebugMode());
+const layoutStore = useLayoutStore();
 
-interface FormDataItem {
-  enabled: boolean;
-  apiKey?: string;
-  sessionToken?: string;
-  baseUrl?: string;
-  model?: string;
-}
+const showSettings = ref(true);
+const debugMode = ref(false);
+const gridColumns = ref(2);
+const gridGap = ref(16);
+const appVersion = ref('1.0.0');
 
-const availableAIs = ref([
-  { id: 'chatgpt', name: 'ChatGPT' },
-  { id: 'gemini', name: 'Gemini' },
-  { id: 'qwen', name: 'Qwen (千问)' },
-  { id: 'douban', name: 'Douban (豆包)' },
-  { id: 'yuanbao', name: 'Yuanbao (元宝)' },
-]);
+const providers = computed(() => appStore.providers);
 
-const formData = reactive<Record<string, FormDataItem>>({});
-const testingProviders = ref<Set<string>>(new Set());
-const testResults = ref<Map<string, boolean>>(new Map());
+const toggleDebugMode = (value: boolean) => {
+  debug.setEnabled(value);
+  localStorage.setItem('debug-mode', value.toString());
+};
+
+const updateGridColumns = (value: number) => {
+  layoutStore.gridSettings.columns = value;
+};
+
+const updateGridGap = (value: number) => {
+  layoutStore.gridSettings.gap = value;
+};
+
+const updateProvider = (providerId: string, updates: any) => {
+  const provider = appStore.getProvider(providerId);
+  if (provider) {
+    Object.assign(provider, updates);
+  }
+};
+
+const openDevTools = () => {
+  // 这在 Electron 环境中调用开发者工具
+  window.electron?.ipcRenderer.invoke('open-dev-tools');
+};
+
+const goBack = () => {
+  showSettings.value = false;
+  router.back();
+};
 
 onMounted(() => {
-  loadSettings();
+  debugMode.value = debug.isEnabled();
+  gridColumns.value = layoutStore.gridSettings.columns;
+  gridGap.value = layoutStore.gridSettings.gap;
 });
-
-const toggleDebugMode = (enabled: boolean) => {
-  setDebugMode(enabled);
-  if (enabled) {
-    ElMessage.success('Debug mode enabled - Check browser console');
-  } else {
-    ElMessage.info('Debug mode disabled');
-  }
-};
-
-const loadSettings = () => {
-  const configs = appStore.getAIConfigurations();
-  for (const ai of availableAIs.value) {
-    const config = configs[ai.id];
-    formData[ai.id] = {
-      enabled: config?.enabled || false,
-      apiKey: config?.apiKey || '',
-      sessionToken: config?.customConfig?.sessionToken || '',
-      baseUrl: config?.baseUrl || '',
-      model: config?.model || '',
-    };
-  }
-};
-
-const saveSettings = (aiId: string) => {
-  const data = formData[aiId];
-  const config = {
-    enabled: data.enabled,
-    apiKey: data.apiKey,
-    baseUrl: data.baseUrl,
-    model: data.model,
-    customConfig: {
-      sessionToken: data.sessionToken,
-    },
-  };
-
-  appStore.updateAIConfig(aiId, config);
-  providerManager.updateProviderConfig(aiId, config);
-  ElMessage.success(`${availableAIs.value.find(a => a.id === aiId)?.name} settings saved`);
-};
-
-const saveAllSettings = () => {
-  for (const ai of availableAIs.value) {
-    saveSettings(ai.id);
-  }
-};
-
-const testConnection = async (aiId: string) => {
-  testingProviders.value.add(aiId);
-  try {
-    saveSettings(aiId);
-    const isValid = await providerManager.validateProvider(aiId);
-    testResults.value.set(aiId, isValid);
-
-    if (isValid) {
-      ElMessage.success('Connection successful!');
-    } else {
-      ElMessage.error('Connection failed. Please check your credentials.');
-    }
-  } catch (error) {
-    testResults.value.set(aiId, false);
-    ElMessage.error(
-      `Connection error: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
-  } finally {
-    testingProviders.value.delete(aiId);
-  }
-};
-
-const onToggleProvider = (aiId: string) => {
-  formData[aiId].enabled = !formData[aiId].enabled;
-};
 </script>
 
 <style scoped lang="css">
-.settings-view {
-  padding: 20px;
-  background: #f5f7fa;
-  height: 100%;
-  overflow-y: auto;
-}
-
-.debug-card {
-  max-width: 900px;
-  margin: 0 auto 20px;
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
-}
-
-.debug-info {
-  padding: 12px 0;
-}
-
-.debug-status {
-  margin: 8px 0;
-  font-size: 14px;
-  color: #92400e;
-}
-
-.debug-hint {
-  margin: 12px 0 0;
-  padding-top: 12px;
-  border-top: 1px solid #fcd34d;
-  font-size: 13px;
-  color: #92400e;
-  font-style: italic;
-}
-
-.debug-hint code {
-  background: #fef08a;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-family: 'Monaco', 'Menlo', monospace;
-  font-size: 12px;
-}
-
-.settings-card {
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-  font-size: 16px;
-}
-
-.settings-form {
-  padding: 20px;
-}
-
-.form-group {
+.settings-section {
   margin-bottom: 20px;
 }
 
-.form-group label {
-  display: block;
+.settings-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
   font-weight: 600;
-  margin-bottom: 12px;
   color: #1f2937;
 }
 
-.help-text {
-  margin-top: 6px;
-  font-size: 12px;
-  color: #909399;
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  gap: 12px;
 }
 
-.test-result {
-  margin-top: 12px;
-  padding: 8px 12px;
+.settings-item span {
+  font-size: 13px;
+  color: #606266;
+}
+
+.debug-info {
+  background: #fef0f0;
+  border-left: 3px solid #fde4e4;
+  padding: 12px;
+  margin-top: 8px;
   border-radius: 4px;
-  font-size: 14px;
-
-  &.success {
-    background: #f0f9ff;
-    color: #0ea5e9;
-    border: 1px solid #0ea5e9;
-  }
-
-  &.error {
-    background: #fef2f2;
-    color: #ef4444;
-    border: 1px solid #ef4444;
-  }
+  font-size: 12px;
 }
 
-.settings-info {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #ebeef5;
+.debug-info p {
+  margin: 0 0 8px 0;
+  color: #f56c6c;
 }
 
-.guide-list {
-  list-style: none;
-  padding: 0;
+.provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.provider-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-radius: 6px;
+}
+
+.provider-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+.provider-name {
+  flex: 1;
+  font-size: 13px;
+}
+
+.about-text {
   margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #606266;
+}
 
-  li {
-    margin: 8px 0;
-    line-height: 1.6;
-
-    a {
-      color: #409eff;
-      text-decoration: none;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-  }
+:deep(.el-dialog__body) {
+  max-height: 60vh;
+  overflow-y: auto;
 }
 </style>

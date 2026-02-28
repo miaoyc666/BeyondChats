@@ -102,3 +102,18 @@ ipcMain.handle('maximize-window', () => {
 ipcMain.handle('close-window', () => {
   mainWindow?.close();
 });
+
+// IPC handlers for dev tools
+ipcMain.handle('open-dev-tools', () => {
+  mainWindow?.webContents.openDevTools();
+});
+
+ipcMain.handle('close-dev-tools', () => {
+  mainWindow?.webContents.closeDevTools();
+});
+
+// IPC handlers for WebView communication
+ipcMain.handle('send-to-webview', (event, { webviewId, message }) => {
+  // This can be extended to send messages to specific WebViews
+  console.log(`[IPC] Sending to ${webviewId}:`, message);
+});
