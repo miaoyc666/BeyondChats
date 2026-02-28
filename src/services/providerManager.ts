@@ -90,9 +90,21 @@ export class ProviderManager {
   ): Promise<string> {
     const provider = this.providers.get(providerId);
     if (!provider) {
-      throw new Error(`Provider ${providerId} not found`);
+      const error = `Provider ${providerId} not found`;
+      debugError(error);
+      throw new Error(error);
     }
-    return provider.sendMessage(message, conversationHistory);
+    debugAPI('POST', `api/${providerId}/message`, { message, historyLength: conversationHistory?.length || 0 });
+    const endPerf = debugPerformance(`Message from ${providerId}`);
+    try {
+      const response = await provider.sendMessage(message, conversationHistory);
+      debugSuccess(`Got response from ${providerId}`, { length: response.length });
+      endPerf();
+      return response;
+    } catch (error) {
+      debugError(`Failed to get message from ${providerId}`, error);
+      throw error;
+    }
   }
 
   /**
