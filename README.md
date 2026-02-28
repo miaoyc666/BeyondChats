@@ -100,13 +100,6 @@ npm run dev
 - 输入你的问题
 - 按 `Ctrl+Enter` 发送或点击 **Send** 按钮
 
-## 📚 详细文档
-
-本项目包含详尽的文档：
-
-- 📄 **[GETTING_STARTED.md](./GETTING_STARTED.md)** - 新手快速启动指南
-- 📄 **[PROJECT_SETUP.md](./PROJECT_SETUP.md)** - 完整的项目架构和技术说明
-- 📄 **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - 详细的实现总结
 
 ## 🎮 使用指南
 
@@ -291,84 +284,103 @@ npm run dev
 
 ### macOS 应用打包
 
-将项目打包成可在 macOS 上运行的 `.app` 文件：
+#### 环境要求
 
-#### 前置要求
-- macOS 10.13 或更高版本
-- Node.js 18+ （用于构建）
-- 2GB+ 空闲磁盘空间
+| 要求 | 版本 | 说明 |
+|------|------|------|
+| **macOS** | 10.13+ | 最低系统版本 |
+| **Node.js** | 18+ | **必须** 18.0.0 或更高 |
+| **npm** | 9+ | 通常与 Node.js 18+ 一起安装 |
+| **磁盘空间** | 2GB+ | 用于构建和输出 |
 
-#### 打包步骤
+#### 检查环境
+```bash
+node -v    # 应该输出 v18.x.x 或更高
+npm -v     # 应该输出 9.x.x 或更高
+```
 
-1️⃣ **构建应用**
+**如果 Node.js 版本过低**，使用 nvm 升级：
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+source ~/.zshrc
+nvm install 18
+nvm use 18
+```
+
+#### 构建步骤
+
+1️⃣ **构建 macOS 应用**
 ```bash
 npm run build:mac
 ```
 
-这会在 `dist/` 目录下生成可安装的应用：
-- `BeyondChats-x.x.x.dmg` - macOS 安装程序（DMG 格式）
+或构建所有平台：
+```bash
+npm run build
+```
+
+构建会分三个阶段进行：
+1. 构建渲染进程（Vite，1-2 分钟）
+2. 编译主进程（TypeScript，10-30 秒）
+3. 打包应用（Electron Builder，2-3 分钟）
+
+**总耗时**：首次 5-10 分钟，后续更快（使用缓存）
+
+2️⃣ **输出文件**
+
+在 `dist/` 目录下会生成：
+- `BeyondChats-x.x.x.dmg` - macOS 安装程序（推荐）
 - `BeyondChats-x.x.x.zip` - 压缩应用包
 
-2️⃣ **安装应用**
+3️⃣ **安装应用**
 
-**方式一：使用 DMG 安装**
+**方式一：使用 DMG（推荐）**
 - 双击 `BeyondChats-x.x.x.dmg`
-- 将 BeyondChats 图标拖到 Applications 文件夹
-- 打开 Applications 文件夹运行应用
+- 将 BeyondChats 拖到 Applications 文件夹
+- 打开 Applications 运行应用
 
-**方式二：直接运行 ZIP 中的应用**
-- 解压 `BeyondChats-x.x.x.zip`
-- 双击生成的 `BeyondChats.app`
-
-#### 构建配置说明
-
-项目的 `package.json` 中 `build` 配置定义了打包参数：
-
-```json
-{
-  "build": {
-    "appId": "com.beyondchats.app",
-    "productName": "BeyondChats",
-    "mac": {
-      "target": ["dmg", "zip"],
-      "category": "public.app-category.productivity"
-    }
-  }
-}
+**方式二：从 ZIP 直接运行**
+```bash
+unzip dist/BeyondChats-x.x.x.zip
+open BeyondChats.app
 ```
 
-**配置含义**:
-- `appId`: 应用的唯一标识
-- `productName`: 应用显示名称
-- `target`: 输出格式（DMG 和 ZIP）
-- `category`: macOS 应用分类
+首次运行若提示"无法验证开发者"：
+- 右击 BeyondChats.app
+- 选择"打开"
+- 在对话框点击"打开"
 
-#### 构建时间
+#### 代码签名（可选）
 
-首次构建需要 2-5 分钟，后续构建会更快（使用缓存）。
-
-#### 验证应用
-
-构建完成后，验证应用是否正确：
-
+对于分发应用，可进行代码签名：
 ```bash
-# 查看生成的文件
-ls -lh dist/
-
-# 检查应用信息
-spctl -a -v "dist/BeyondChats.app"
-```
-
-#### 代码签名和公证（可选）
-
-对于分发应用，建议进行代码签名：
-
-```bash
-# 使用 codesign 进行签名（需要开发者证书）
-codesign -s - "dist/BeyondChats.app"
+# 自签名（开发用）
+codesign -s - dist/BeyondChats.app
 
 # 验证签名
-codesign -v "dist/BeyondChats.app"
+codesign -v dist/BeyondChats.app
+```
+
+#### 故障排除
+
+**构建失败：Node 版本过低**
+```bash
+# 错误: TypeError: crypto$2.getRandomValues is not a function
+# 解决: 升级到 Node.js 18+
+nvm install 18 && nvm use 18
+npm run build:mac
+```
+
+**应用无法启动**
+- 检查 API 密钥是否正确配置
+- 查看应用日志：`~/Library/Logs/BeyondChats/`
+- 尝试重新安装应用
+
+**磁盘空间不足**
+```bash
+rm -rf dist node_modules/.cache
+# 确保有至少 2GB 空闲空间
+df -h
 ```
 
 ## 📄 许可证
