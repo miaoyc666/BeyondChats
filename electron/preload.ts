@@ -1,56 +1,61 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 
-// Define the API object that will be exposed to the renderer process
-const api = {
-  // Window controls
-  minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
-  maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
-  closeWindow: () => ipcRenderer.invoke('close-window'),
-
-  // App info
+/**
+ * 预加载脚本 - 在渲染进程中暴露安全的 API
+ */
+contextBridge.exposeInMainWorld('electronAPI', {
+  // 应用信息
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
-  getAppPath: () => ipcRenderer.invoke('get-app-path'),
+  getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
 
-  // Dev tools
-  openDevTools: () => ipcRenderer.invoke('open-dev-tools'),
-  closeDevTools: () => ipcRenderer.invoke('close-dev-tools'),
+  // 窗口控制
+  minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
+  closeWindow: () => ipcRenderer.invoke('close-window'),
+  maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
+  unmaximizeWindow: () => ipcRenderer.invoke('unmaximize-window'),
+  isMaximized: () => ipcRenderer.invoke('is-maximized'),
+  toggleFullScreen: () => ipcRenderer.invoke('toggle-fullscreen'),
 
-  // WebView preload path
-  getPreloadPath: (scriptName?: string) =>
-    ipcRenderer.invoke('get-preload-path', scriptName),
+  // WebView管理
+  sendMessageToWebView: (webviewId: string, message: string) => ipcRenderer.invoke('send-message-to-webview', { webviewId, message }),
+  refreshWebView: (webviewId: string) => ipcRenderer.invoke('refresh-webview', webviewId),
+  refreshAllWebViews: () => ipcRenderer.invoke('refresh-all-webviews'),
+  loadWebView: (webviewId: string, url: string) => ipcRenderer.invoke('load-webview', { webviewId, url }),
+  openDevTools: (webviewId: string) => ipcRenderer.invoke('open-devtools', webviewId),
 
-  // Session management
-  saveSession: (data: { providerId: string }) =>
-    ipcRenderer.invoke('save-session', data),
+  // 会话管理
+  saveSession: (data: any) => ipcRenderer.invoke('session-save', data),
+  loadSession: (data: any) => ipcRenderer.invoke('session-load', data),
+  clearSession: (data: any) => ipcRenderer.invoke('session-clear', data),
 
-  loadSession: (data: { providerId: string }) =>
-    ipcRenderer.invoke('load-session', data),
+  // 获取预加载脚本路径
+  getPreloadPath: (preloadName: string) => ipcRenderer.invoke('get-preload-path', preloadName),
 
-  // External links
-  openExternal: (url: string) =>
-    ipcRenderer.invoke('open-external', url),
+  // 外部链接
+  openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
 
-  // IPC send/receive for custom messages
+  // 通用方法
   send: (channel: string, data: any) => {
     ipcRenderer.send(channel, data)
   },
 
   on: (channel: string, listener: (...args: any[]) => void) => {
-    ipcRenderer.on(channel, (event: IpcRendererEvent, ...args: any[]) =>
-      listener(...args)
-    )
+    ipcRenderer.on(channel, (event, ...args) => listener(...args))
   },
 
   once: (channel: string, listener: (...args: any[]) => void) => {
-    ipcRenderer.once(channel, (event: IpcRendererEvent, ...args: any[]) =>
-      listener(...args)
-    )
+    ipcRenderer.once(channel, (event, ...args) => listener(...args))
   },
 
   invoke: (channel: string, data?: any) => {
     return ipcRenderer.invoke(channel, data)
   },
-}
 
-// Expose the API to the renderer process
-contextBridge.exposeInMainWorld('electron', api)
+  removeListener: (channel: string, callback: (...args: any[]) => void) => {
+    ipcRenderer.removeListener(channel, callback)
+  },
+
+  removeAllListeners: (channel: string) => {
+    ipcRenderer.removeAllListeners(channel)
+  },
+})

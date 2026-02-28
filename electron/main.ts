@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, session, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import * as path from 'path'
 import { isDev } from './utils'
 
@@ -31,7 +31,7 @@ const createWindow = (): void => {
       nodeIntegration: false,
       contextIsolation: true,
       webviewTag: true, // Enable <webview> tag
-      webSecurity: false, // Allow loading external websites (required for webview)
+      webSecurity: false, // Allow loading external websites
     },
   })
 
@@ -96,6 +96,14 @@ ipcMain.handle('get-app-path', () => {
   return app.getAppPath()
 })
 
+ipcMain.handle('get-system-info', () => {
+  return {
+    platform: process.platform,
+    arch: process.arch,
+    nodeVersion: process.version,
+  }
+})
+
 ipcMain.handle('minimize-window', () => {
   mainWindow?.minimize()
 })
@@ -108,17 +116,64 @@ ipcMain.handle('maximize-window', () => {
   }
 })
 
+ipcMain.handle('unmaximize-window', () => {
+  mainWindow?.unmaximize()
+})
+
+ipcMain.handle('is-maximized', () => {
+  return mainWindow?.isMaximized() || false
+})
+
 ipcMain.handle('close-window', () => {
   mainWindow?.close()
 })
 
-// IPC handlers for dev tools
-ipcMain.handle('open-dev-tools', () => {
-  mainWindow?.webContents.openDevTools()
+ipcMain.handle('toggle-fullscreen', () => {
+  if (mainWindow) {
+    mainWindow.setFullScreen(!mainWindow.isFullScreen())
+  }
 })
 
-ipcMain.handle('close-dev-tools', () => {
-  mainWindow?.webContents.closeDevTools()
+// IPC handlers for WebView
+ipcMain.handle('send-message-to-webview', (event, { webviewId, message }) => {
+  console.log(`[IPC] Sending message to ${webviewId}:`, message)
+  return { success: true }
+})
+
+ipcMain.handle('refresh-webview', (event, webviewId) => {
+  console.log(`[IPC] Refreshing webview ${webviewId}`)
+  return { success: true }
+})
+
+ipcMain.handle('refresh-all-webviews', () => {
+  console.log(`[IPC] Refreshing all webviews`)
+  return { success: true }
+})
+
+ipcMain.handle('load-webview', (event, { webviewId, url }) => {
+  console.log(`[IPC] Loading webview ${webviewId} with URL ${url}`)
+  return { success: true }
+})
+
+ipcMain.handle('open-devtools', (event, webviewId) => {
+  console.log(`[IPC] Opening devtools for ${webviewId}`)
+  return { success: true }
+})
+
+// IPC handlers for session management
+ipcMain.handle('session-save', (event, data) => {
+  console.log(`[IPC] Saving session for provider: ${data.providerId}`)
+  return { success: true }
+})
+
+ipcMain.handle('session-load', (event, data) => {
+  console.log(`[IPC] Loading session for provider: ${data.providerId}`)
+  return { exists: true, sessionData: null }
+})
+
+ipcMain.handle('session-clear', (event, data) => {
+  console.log(`[IPC] Clearing session for provider: ${data.providerId}`)
+  return { success: true }
 })
 
 // IPC handler for getting preload path for webviews
@@ -128,21 +183,9 @@ ipcMain.handle('get-preload-path', (event, scriptName: string = 'webview-preload
   return preloadPath
 })
 
-// IPC handler for saving session
-ipcMain.handle('save-session', (event, data: { providerId: string }) => {
-  console.log(`[IPC] Saving session for provider: ${data.providerId}`)
-  // Session data is stored in the webview partition, no action needed here
-  return { success: true }
-})
-
-// IPC handler for loading session
-ipcMain.handle('load-session', (event, data: { providerId: string }) => {
-  console.log(`[IPC] Loading session for provider: ${data.providerId}`)
-  // Session data is automatically restored from partition
-  return { exists: true, sessionData: null }
-})
-
 // Open external links in default browser
 ipcMain.handle('open-external', (event, url: string) => {
+  console.log(`[IPC] Opening external URL: ${url}`)
   shell.openExternal(url)
+  return { success: true }
 })
