@@ -2,13 +2,7 @@
 
 ## 项目 100% 由 AI 编程助手实现
 
-本项目 **BeyondChats** 完全由 **CatPaw AI 编程助手** 实现。
-
-### 📋 实现细节
-
-#### 使用的 AI 工具
-- **CatPaw** - Meituan 美团自研的 AI 编程助手
-- **IDE**: CatPaw IDE（基于 Cursor 的企业级代码编辑器）
+本项目 **BeyondChats** 完全由 AI 编程助手实现。
 
 #### 实现时间线
 

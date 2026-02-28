@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/Version-0.1.0-brightgreen)](https://github.com/miaoyc666/BeyondChats/releases)
 
-> 🎉 **声明**: 本项目完全由 AI 实现（使用 CatPaw AI 编程助手）
+> 🎉 **声明**: 本项目完全由 AI 编程助手实现
 
 ---
 
@@ -286,6 +286,90 @@ npm run dev
 - 确保 API 密钥有效
 - 检查 API 配额/额度
 - 查看浏览器控制台错误信息
+
+## 📦 构建和打包
+
+### macOS 应用打包
+
+将项目打包成可在 macOS 上运行的 `.app` 文件：
+
+#### 前置要求
+- macOS 10.13 或更高版本
+- Node.js 18+ （用于构建）
+- 2GB+ 空闲磁盘空间
+
+#### 打包步骤
+
+1️⃣ **构建应用**
+```bash
+npm run build:mac
+```
+
+这会在 `dist/` 目录下生成可安装的应用：
+- `BeyondChats-x.x.x.dmg` - macOS 安装程序（DMG 格式）
+- `BeyondChats-x.x.x.zip` - 压缩应用包
+
+2️⃣ **安装应用**
+
+**方式一：使用 DMG 安装**
+- 双击 `BeyondChats-x.x.x.dmg`
+- 将 BeyondChats 图标拖到 Applications 文件夹
+- 打开 Applications 文件夹运行应用
+
+**方式二：直接运行 ZIP 中的应用**
+- 解压 `BeyondChats-x.x.x.zip`
+- 双击生成的 `BeyondChats.app`
+
+#### 构建配置说明
+
+项目的 `package.json` 中 `build` 配置定义了打包参数：
+
+```json
+{
+  "build": {
+    "appId": "com.beyondchats.app",
+    "productName": "BeyondChats",
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.productivity"
+    }
+  }
+}
+```
+
+**配置含义**:
+- `appId`: 应用的唯一标识
+- `productName`: 应用显示名称
+- `target`: 输出格式（DMG 和 ZIP）
+- `category`: macOS 应用分类
+
+#### 构建时间
+
+首次构建需要 2-5 分钟，后续构建会更快（使用缓存）。
+
+#### 验证应用
+
+构建完成后，验证应用是否正确：
+
+```bash
+# 查看生成的文件
+ls -lh dist/
+
+# 检查应用信息
+spctl -a -v "dist/BeyondChats.app"
+```
+
+#### 代码签名和公证（可选）
+
+对于分发应用，建议进行代码签名：
+
+```bash
+# 使用 codesign 进行签名（需要开发者证书）
+codesign -s - "dist/BeyondChats.app"
+
+# 验证签名
+codesign -v "dist/BeyondChats.app"
+```
 
 ## 📄 许可证
 
