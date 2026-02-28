@@ -170,12 +170,13 @@ const startResize = (event: MouseEvent) => {
 
 .ai-card.maximized {
   position: fixed !important;
-  top: 16px !important;
-  left: 16px !important;
-  width: calc(100vw - 32px) !important;
-  height: calc(100vh - 120px) !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
   z-index: 1000 !important;
   border-color: #409eff;
+  border-radius: 0 !important;
 }
 
 .ai-card:hover {

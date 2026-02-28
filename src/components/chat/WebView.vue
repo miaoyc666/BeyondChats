@@ -2,9 +2,11 @@
   <div class="webview-wrapper" :style="{ width: `${width}px`, height: `${height}px` }">
     <iframe
       :id="provider.webviewId"
+      :key="provider.id"
       class="webview"
       :src="provider.url"
-      sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-storage"
+      :sandbox="`allow-same-origin allow-scripts allow-popups allow-forms allow-storage 
+        allow-modals allow-presentation allow-orientation-lock allow-top-navigation-by-user-activation`"
       @load="handleLoad"
       @error="handleError"
     />
@@ -12,6 +14,8 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
+import { useAppStore } from '@/stores';
 import type { AIProvider } from '@/stores/app';
 
 interface Props {
@@ -21,14 +25,36 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const appStore = useAppStore();
 
 const handleLoad = () => {
-  console.log(`WebView loaded for ${props.provider.name}`);
+  console.log(`[WebView] Loaded for ${props.provider.name}`);
+  
+  // Update provider status
+  const provider = appStore.getProvider(props.provider.id);
+  if (provider) {
+    provider.loadingState = 'loaded';
+  }
 };
 
 const handleError = () => {
-  console.error(`WebView error for ${props.provider.name}`);
+  console.error(`[WebView] Error loading ${props.provider.name}`);
+  
+  // Update provider status
+  const provider = appStore.getProvider(props.provider.id);
+  if (provider) {
+    provider.loadingState = 'error';
+    provider.lastError = 'Failed to load WebView';
+  }
 };
+
+onMounted(() => {
+  // Update loading state
+  const provider = appStore.getProvider(props.provider.id);
+  if (provider) {
+    provider.loadingState = 'loading';
+  }
+});
 </script>
 
 <style scoped lang="css">
