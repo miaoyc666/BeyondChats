@@ -48,20 +48,10 @@
     <!-- WebView容器 -->
     <div v-show="!config?.isMinimized" class="webview-container">
       <WebView
-        v-if="shouldShowWebView"
         :provider="provider"
         :width="webviewWidth"
         :height="webviewHeight"
       />
-      <div v-else class="webview-placeholder">
-        <el-empty
-          v-if="!provider.isLoggedIn"
-          description="请先登录"
-        />
-        <el-icon v-else-if="provider.loadingState === 'loading'" class="loading-icon">
-          <Loading />
-        </el-icon>
-      </div>
     </div>
 
     <!-- 调整大小手柄 -->
@@ -89,9 +79,6 @@ interface Props {
 const props = defineProps<Props>();
 const layoutStore = useLayoutStore();
 
-const shouldShowWebView = computed(() => {
-  return props.provider.isEnabled && props.provider.loadingState !== 'idle';
-});
 
 const cardStyle = computed(() => {
   if (!props.config) return {};
@@ -223,28 +210,6 @@ const startResize = (event: MouseEvent) => {
   min-height: 300px;
 }
 
-.webview-placeholder {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f5f7fa;
-  color: #909399;
-}
-
-.loading-icon {
-  font-size: 32px;
-  animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 .resize-handle {
   position: absolute;
