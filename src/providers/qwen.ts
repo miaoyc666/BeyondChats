@@ -30,7 +30,7 @@ export class QwenProvider extends AIProvider {
       ];
 
       const response = await axios.post(
-        this.config.baseUrl,
+        this.config.baseUrl || '',
         {
           model: this.config.model,
           messages,
@@ -73,7 +73,7 @@ export class QwenProvider extends AIProvider {
       ];
 
       const response = await axios.post(
-        this.config.baseUrl,
+        this.config.baseUrl || '',
         {
           model: this.config.model,
           messages,
@@ -138,7 +138,7 @@ export class QwenProvider extends AIProvider {
 
     try {
       const response = await axios.post(
-        this.config.baseUrl,
+        this.config.baseUrl || '',
         {
           model: this.config.model,
           messages: [{ role: 'user', content: 'test' }],

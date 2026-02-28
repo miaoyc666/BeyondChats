@@ -12,21 +12,24 @@
             <el-button
               link
               type="primary"
-              icon="Minus"
               @click="minimizeWindow"
-            />
+            >
+              <el-icon><Minus /></el-icon>
+            </el-button>
             <el-button
               link
               type="primary"
-              icon="Square"
               @click="maximizeWindow"
-            />
+            >
+              <el-icon><Square /></el-icon>
+            </el-button>
             <el-button
               link
               type="primary"
-              icon="Close"
               @click="closeWindow"
-            />
+            >
+              <el-icon><Close /></el-icon>
+            </el-button>
           </div>
         </div>
       </el-header>
