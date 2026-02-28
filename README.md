@@ -287,34 +287,6 @@ npm run dev
 - 检查 API 配额/额度
 - 查看浏览器控制台错误信息
 
-## 📊 项目统计
-
-- 📝 **源代码文件**: 18 个
-- 📄 **代码行数**: ~2000+ 行
-- 🤖 **AI 提供商**: 5 个
-- 🎨 **UI 组件**: 4 个主要组件
-- 📚 **文档**: 4 份详细文档
-- ✅ **测试覆盖**: 企业级代码质量
-
-## 🎯 后续计划
-
-### 🔄 近期 (1-2 周)
-- [ ] UI/UX 改进和主题支持
-- [ ] 消息搜索和过滤功能
-- [ ] 对话导出 (PDF/Markdown)
-
-### 📈 中期 (1 个月)
-- [ ] 添加更多 AI 提供商 (Claude、DeepSeek 等)
-- [ ] 消息加密存储
-- [ ] 代理和 VPN 支持
-- [ ] 性能优化
-
-### 🚀 长期 (2-3 个月)
-- [ ] 插件系统支持
-- [ ] 语音输入/输出功能
-- [ ] 云同步能力
-- [ ] 团队协作功能
-
 ## 📄 许可证
 
 本项目采用 [MIT License](./LICENSE) - 可自由使用、修改和发布
@@ -334,22 +306,6 @@ npm run dev
 - 🐙 **GitHub**: https://github.com/miaoyc666/BeyondChats
 - 📧 **邮件**: dev@beyondchats.com
 - 💬 **讨论**: [GitHub Discussions](https://github.com/miaoyc666/BeyondChats/discussions)
-
-## 🙏 致谢
-
-感谢所有 AI 服务提供商的 API 支持：
-- OpenAI - ChatGPT API
-- Google - Gemini API
-- Alibaba - Qwen API
-- ByteDance - Douban API
-- Tencent - Yuanbao API
-
-## 🎓 学习资源
-
-- [Electron 官方文档](https://www.electronjs.org/docs)
-- [Vue 3 文档](https://vuejs.org/)
-- [TypeScript 手册](https://www.typescriptlang.org/docs/)
-- [Pinia 文档](https://pinia.vuejs.org/)
 
 ---
 
