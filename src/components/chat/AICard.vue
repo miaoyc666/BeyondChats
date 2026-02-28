@@ -59,8 +59,9 @@
       v-show="!config?.isMinimized"
       class="resize-handle"
       @mousedown="startResize"
+      title="拖动调整大小"
     >
-      <el-icon><Rank /></el-icon>
+      ⋰
     </div>
   </div>
 </template>

@@ -23,7 +23,10 @@
       <div class="error-icon">⚠️</div>
       <p class="error-title">{{ provider.name }} 加载失败</p>
       <p class="error-desc">{{ errorMessage }}</p>
-      <button class="retry-btn" @click="retryLoad">重新加载</button>
+      <div class="button-group">
+        <button class="retry-btn" @click="retryLoad">重新加载</button>
+        <a :href="provider.url" target="_blank" class="open-btn">在浏览器中打开</a>
+      </div>
     </div>
   </div>
 </template>
@@ -64,15 +67,23 @@ const handleError = () => {
   hasError.value = true;
   
   // 根据不同的 provider 提供不同的错误信息
+  // 这些网站有 CSP 限制，禁止在 iframe 中加载
+  const cspRestrictedSites = ['chatgpt', 'gemini', 'doubao'];
+  
   const errorTexts: Record<string, string> = {
-    'chatgpt': '由于安全策略限制，无法在本应用中直接加载。请在浏览器中访问 chat.openai.com',
-    'gemini': '由于安全策略限制，无法在本应用中直接加载。请在浏览器中访问 gemini.google.com',
+    'chatgpt': '由于安全策略限制，无法在本应用中直接加载。请在浏览器中打开 ChatGPT 网站使用。',
+    'gemini': '由于安全策略限制，无法在本应用中直接加载。请在浏览器中打开 Gemini 网站使用。',
     'qwen': '加载失败，请检查网络连接或稍后重试',
     'douban': '加载失败，请检查网络连接或稍后重试',
     'yuanbao': '加载失败，请检查网络连接或稍后重试',
   };
   
   errorMessage.value = errorTexts[props.provider.id] || '加载失败，请检查网络连接';
+  
+  // 对于 CSP 限制的网站，自动标记为已知不能加载
+  if (cspRestrictedSites.includes(props.provider.id)) {
+    console.warn(`[WebView] ${props.provider.name} has CSP restrictions preventing iframe loading`);
+  }
   
   // Update provider status
   const provider = appStore.getProvider(props.provider.id);
@@ -197,8 +208,15 @@ onMounted(() => {
   line-height: 1.5;
 }
 
-.retry-btn {
-  margin-top: 8px;
+.button-group {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  justify-content: center;
+}
+
+.retry-btn,
+.open-btn {
   padding: 8px 24px;
   background: #409eff;
   color: #fff;
@@ -207,13 +225,19 @@ onMounted(() => {
   font-size: 13px;
   cursor: pointer;
   transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.retry-btn:hover {
+.retry-btn:hover,
+.open-btn:hover {
   background: #66b1ff;
 }
 
-.retry-btn:active {
+.retry-btn:active,
+.open-btn:active {
   background: #0a66c2;
 }
 </style>
