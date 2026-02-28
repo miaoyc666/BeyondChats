@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url';
 export default defineConfig({
   plugins: [vue()],
   base: './',
+  define: {
+    global: 'globalThis',
+  },
   server: {
     port: 5173,
     host: true,
@@ -23,6 +26,13 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: 'globalThis',
+      },
     },
   },
 });

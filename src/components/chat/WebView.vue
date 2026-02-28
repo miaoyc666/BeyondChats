@@ -1,21 +1,16 @@
 <template>
-  <div class="webview-wrapper" :style="{ width: `${width}px`, height: `${height}px` }">
+  <div class="webview-wrapper">
     <!-- 加载中状态 -->
     <div v-if="isLoading" class="loading-state">
       <div class="spinner"></div>
       <p>正在加载 {{ provider.name }}...</p>
     </div>
 
-    <!-- WebView iframe -->
-    <iframe
-      v-show="!isLoading"
-      :id="provider.webviewId"
-      :key="provider.id"
-      class="webview"
-      :src="provider.url"
-      sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-presentation allow-orientation-lock"
-      @load="handleLoad"
-      @error="handleError"
+    <!-- WebView 容器 -->
+    <div
+      v-show="!isLoading && !hasError"
+      :id="`webview-container-${provider.id}`"
+      class="webview-container"
     />
 
     <!-- 错误提示 -->
@@ -32,94 +27,164 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useAppStore } from '@/stores';
 import type { AIProvider } from '@/stores/app';
 
 interface Props {
   provider: AIProvider;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  width: 800,
+  height: 600,
+});
+
 const appStore = useAppStore();
 
 const isLoading = ref(true);
 const hasError = ref(false);
 const errorMessage = ref('');
+const webviewElement = ref<any>(null);
 
-const handleLoad = () => {
-  console.log(`[WebView] Loaded for ${props.provider.name}`);
-  isLoading.value = false;
-  hasError.value = false;
+/**
+ * 创建 WebView 元素
+ */
+const createWebView = async() => {
+  const containerId = `webview-container-${props.provider.id}`;
+  const container = document.getElementById(containerId);
   
-  // Update provider status
-  const provider = appStore.getProvider(props.provider.id);
-  if (provider) {
-    provider.loadingState = 'loaded';
+  if (!container) {
+    console.error(`[WebView] Container not found: ${containerId}`);
+    return;
   }
+
+  // 清空容器
+  container.innerHTML = '';
+
+  // 创建 webview 元素
+  const webview = document.createElement('webview') as any;
+  webview.id = `${props.provider.id}-webview`;
+  webview.src = props.provider.url;
+  webview.style.width = '100%';
+  webview.style.height = '100%';
+  webview.style.border = 'none';
+
+  // 设置 webview 属性
+  webview.setAttribute('nodeintegration', 'false');
+  webview.setAttribute('allowpopups', 'true');
+  webview.setAttribute('useragent', getUserAgent());
+  webview.setAttribute('partition', `persist:${props.provider.id}`);
+
+  // 设置 preload 脚本
+  if (window.electron) {
+    try {
+      const preloadPath = await window.electron.getPreloadPath();
+      webview.setAttribute('preload', `file://${preloadPath}`);
+      console.log(`[WebView] Preload script set: file://${preloadPath}`);
+    } catch (e) {
+      console.warn('[WebView] Failed to get preload path:', e);
+    }
+  }
+
+  console.log(`[WebView] Creating webview for ${props.provider.name}`);
+
+  // 添加到容器
+  container.appendChild(webview);
+  webviewElement.value = webview;
+
+  // 绑定事件
+  bindWebViewEvents(webview);
 };
 
-const handleError = () => {
-  console.error(`[WebView] Error loading ${props.provider.name}`);
-  isLoading.value = false;
-  hasError.value = true;
-  
-  // 根据不同的 provider 提供不同的错误信息
-  // 这些网站有 CSP 限制，禁止在 iframe 中加载
-  const cspRestrictedSites = ['chatgpt', 'gemini', 'doubao'];
-  
-  const errorTexts: Record<string, string> = {
-    'chatgpt': '由于安全策略限制，无法在本应用中直接加载。请在浏览器中打开 ChatGPT 网站使用。',
-    'gemini': '由于安全策略限制，无法在本应用中直接加载。请在浏览器中打开 Gemini 网站使用。',
-    'qwen': '加载失败，请检查网络连接或稍后重试',
-    'douban': '加载失败，请检查网络连接或稍后重试',
-    'yuanbao': '加载失败，请检查网络连接或稍后重试',
-  };
-  
-  errorMessage.value = errorTexts[props.provider.id] || '加载失败，请检查网络连接';
-  
-  // 对于 CSP 限制的网站，自动标记为已知不能加载
-  if (cspRestrictedSites.includes(props.provider.id)) {
-    console.warn(`[WebView] ${props.provider.name} has CSP restrictions preventing iframe loading`);
-  }
-  
-  // Update provider status
-  const provider = appStore.getProvider(props.provider.id);
-  if (provider) {
-    provider.loadingState = 'error';
-    provider.lastError = errorMessage.value;
-  }
+/**
+ * 获取用户代理字符串
+ */
+const getUserAgent = (): string => {
+  const baseUA = navigator.userAgent;
+  // 移除 Electron 标识，避免被某些网站检测为自动化工具
+  return baseUA.replace(/Electron\/[\d.]+\s/, '');
 };
 
+/**
+ * 绑定 WebView 事件
+ */
+const bindWebViewEvents = (webview: any) => {
+  // 页面开始加载
+  webview.addEventListener('did-start-loading', () => {
+    console.log(`[WebView] ${props.provider.name} started loading`);
+    isLoading.value = true;
+    hasError.value = false;
+  });
+
+  // 页面加载完成
+  webview.addEventListener('did-finish-load', () => {
+    console.log(`[WebView] ${props.provider.name} finished loading`);
+    isLoading.value = false;
+    hasError.value = false;
+    
+    const provider = appStore.getProvider(props.provider.id);
+    if (provider) {
+      provider.loadingState = 'loaded';
+    }
+  });
+
+  // 页面加载失败
+  webview.addEventListener('did-fail-load', (event: any) => {
+    if (event.errorCode === -3) return; // 用户取消，忽略
+    
+    console.error(`[WebView] ${props.provider.name} load failed:`, event.errorDescription);
+    isLoading.value = false;
+    hasError.value = true;
+    errorMessage.value = event.errorDescription || '加载失败';
+  });
+
+  // 新窗口请求
+  webview.addEventListener('new-window', (event: any) => {
+    // 在默认浏览器中打开
+    window.open(event.url, '_blank');
+  });
+
+  // 崩溃事件
+  webview.addEventListener('crashed', () => {
+    console.error(`[WebView] ${props.provider.name} crashed`);
+    isLoading.value = false;
+    hasError.value = true;
+    errorMessage.value = '页面已崩溃，请重新加载';
+  });
+};
+
+/**
+ * 重新加载
+ */
 const retryLoad = () => {
-  isLoading.value = true;
-  hasError.value = false;
-  
-  // 通过刷新 iframe 重新加载
-  const iframe = document.getElementById(props.provider.webviewId) as HTMLIFrameElement;
-  if (iframe) {
-    iframe.src = props.provider.url;
+  if (webviewElement.value) {
+    isLoading.value = true;
+    hasError.value = false;
+    webviewElement.value.reload();
+  } else {
+    createWebView();
   }
 };
 
 onMounted(() => {
-  // Update loading state
-  const provider = appStore.getProvider(props.provider.id);
-  if (provider) {
-    provider.loadingState = 'loading';
-  }
-  
-  // 设置加载超时（30秒）
-  const timeout = setTimeout(() => {
-    if (isLoading.value && !hasError.value) {
-      handleError();
+  // 延迟创建 WebView，确保 DOM 已准备好
+  setTimeout(() => {
+    createWebView();
+  }, 100);
+});
+
+onUnmounted(() => {
+  // 清理 WebView
+  if (webviewElement.value) {
+    const container = document.getElementById(`webview-container-${props.provider.id}`);
+    if (container) {
+      container.innerHTML = '';
     }
-  }, 30000);
-  
-  // 清理超时
-  return () => clearTimeout(timeout);
+    webviewElement.value = null;
+  }
 });
 </script>
 
@@ -132,6 +197,12 @@ onMounted(() => {
   align-items: stretch;
   position: relative;
   background: #fff;
+}
+
+.webview-container {
+  width: 100%;
+  height: 100%;
+  flex: 1;
 }
 
 .webview {

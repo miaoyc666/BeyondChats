@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 
 // Define the API object that will be exposed to the renderer process
 const api = {
@@ -15,31 +15,42 @@ const api = {
   openDevTools: () => ipcRenderer.invoke('open-dev-tools'),
   closeDevTools: () => ipcRenderer.invoke('close-dev-tools'),
 
-  // WebView communication
-  sendToWebView: (webviewId: string, message: any) =>
-    ipcRenderer.invoke('send-to-webview', { webviewId, message }),
+  // WebView preload path
+  getPreloadPath: (scriptName?: string) =>
+    ipcRenderer.invoke('get-preload-path', scriptName),
+
+  // Session management
+  saveSession: (data: { providerId: string }) =>
+    ipcRenderer.invoke('save-session', data),
+
+  loadSession: (data: { providerId: string }) =>
+    ipcRenderer.invoke('load-session', data),
+
+  // External links
+  openExternal: (url: string) =>
+    ipcRenderer.invoke('open-external', url),
 
   // IPC send/receive for custom messages
   send: (channel: string, data: any) => {
-    ipcRenderer.send(channel, data);
+    ipcRenderer.send(channel, data)
   },
 
   on: (channel: string, listener: (...args: any[]) => void) => {
     ipcRenderer.on(channel, (event: IpcRendererEvent, ...args: any[]) =>
       listener(...args)
-    );
+    )
   },
 
   once: (channel: string, listener: (...args: any[]) => void) => {
     ipcRenderer.once(channel, (event: IpcRendererEvent, ...args: any[]) =>
       listener(...args)
-    );
+    )
   },
 
   invoke: (channel: string, data?: any) => {
-    return ipcRenderer.invoke(channel, data);
+    return ipcRenderer.invoke(channel, data)
   },
-};
+}
 
 // Expose the API to the renderer process
-contextBridge.exposeInMainWorld('electron', api);
+contextBridge.exposeInMainWorld('electron', api)
