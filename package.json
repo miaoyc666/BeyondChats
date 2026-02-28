@@ -59,8 +59,9 @@
       "output": "dist"
     },
     "files": [
-      "dist",
-      "node_modules",
+      "dist/electron/**/*",
+      "dist/renderer/**/*",
+      "node_modules/**/*",
       "package.json"
     ],
     "mac": {
