@@ -45,9 +45,10 @@ const createWindow = (): void => {
     console.error('[Electron] Failed to load URL:', err);
   });
 
-  // Open devTools for debugging (both dev and production for now)
-  // Comment this out after fixing white screen issues
-  mainWindow.webContents.openDevTools();
+  // Open devTools for debugging in dev mode only
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
+  }
 
   mainWindow.on('closed', () => {
     mainWindow = null;

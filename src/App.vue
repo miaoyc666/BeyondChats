@@ -54,23 +54,23 @@
       </div>
     </div>
 
-    <!-- 路由视图（用于设置页面） -->
-    <router-view />
+    <!-- 设置模态框 -->
+    <SettingsModal v-if="showSettings" @close="showSettings = false" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { useAppStore, useLayoutStore } from '@/stores';
 import UnifiedInput from '@/components/chat/UnifiedInput.vue';
 import AICard from '@/components/chat/AICard.vue';
+import SettingsModal from '@/components/SettingsModal.vue';
 
-const router = useRouter();
 const appStore = useAppStore();
 const layoutStore = useLayoutStore();
 
 // 响应式数据
+const showSettings = ref(false);
 const providers = computed(() => appStore.providers);
 const selectedProviders = computed(() => appStore.selectedProviders);
 const currentMessage = computed({
@@ -124,7 +124,7 @@ const handleSendMessage = async (message: string) => {
 
 // 前往设置页面
 const goToSettings = () => {
-  router.push('/settings');
+  showSettings.value = true;
 };
 
 // 响应式布局

@@ -31,7 +31,7 @@ export const useAppStore = defineStore('app', () => {
     {
       id: 'chatgpt',
       name: 'ChatGPT',
-      icon: '/icons/chatgpt.png',
+      icon: '/icons/chatgpt.svg',
       url: 'https://chat.openai.com',
       isEnabled: false,
       isLoggedIn: false,
@@ -51,7 +51,7 @@ export const useAppStore = defineStore('app', () => {
     {
       id: 'qwen',
       name: 'Qwen (千问)',
-      icon: '/icons/qwen.png',
+      icon: '/icons/qwen.svg',
       url: 'https://qianwen.aliyun.com',
       isEnabled: false,
       isLoggedIn: false,
@@ -61,7 +61,7 @@ export const useAppStore = defineStore('app', () => {
     {
       id: 'douban',
       name: 'Douban (豆包)',
-      icon: '/icons/doubao.png',
+      icon: '/icons/douban.svg',
       url: 'https://www.doubao.com',
       isEnabled: false,
       isLoggedIn: false,
