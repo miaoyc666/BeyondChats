@@ -1,5 +1,28 @@
 <template>
   <div class="settings-view">
+    <!-- Debug Mode Toggle Card -->
+    <el-card class="debug-card">
+      <template #header>
+        <div class="card-header">
+          <span>🐛 Debug Mode</span>
+          <el-switch v-model="debugModeEnabled" @change="toggleDebugMode" />
+        </div>
+      </template>
+      <div class="debug-info">
+        <p v-if="debugModeEnabled" class="debug-status">
+          ✅ Debug mode is <strong>ENABLED</strong>. Check browser console for detailed logs.
+        </p>
+        <p v-else class="debug-status">
+          ❌ Debug mode is <strong>DISABLED</strong>. 
+        </p>
+        <p class="debug-hint">
+          💡 Tip: In console, you can use:
+          <code>window.__debug.enable()</code> or 
+          <code>window.__debug.disable()</code>
+        </p>
+      </div>
+    </el-card>
+
     <el-card class="settings-card">
       <template #header>
         <div class="card-header">
@@ -139,9 +162,11 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useAppStore } from '@/stores/app';
 import { providerManager } from '@/services/providerManager';
+import { setDebugMode, isDebugMode } from '@/utils/debug';
 import { ElMessage } from 'element-plus';
 
 const appStore = useAppStore();
+const debugModeEnabled = ref(isDebugMode());
 
 interface FormDataItem {
   enabled: boolean;
@@ -166,6 +191,15 @@ const testResults = ref<Map<string, boolean>>(new Map());
 onMounted(() => {
   loadSettings();
 });
+
+const toggleDebugMode = (enabled: boolean) => {
+  setDebugMode(enabled);
+  if (enabled) {
+    ElMessage.success('Debug mode enabled - Check browser console');
+  } else {
+    ElMessage.info('Debug mode disabled');
+  }
+};
 
 const loadSettings = () => {
   const configs = appStore.getAIConfigurations();
@@ -237,6 +271,40 @@ const onToggleProvider = (aiId: string) => {
   background: #f5f7fa;
   height: 100%;
   overflow-y: auto;
+}
+
+.debug-card {
+  max-width: 900px;
+  margin: 0 auto 20px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+}
+
+.debug-info {
+  padding: 12px 0;
+}
+
+.debug-status {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #92400e;
+}
+
+.debug-hint {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #fcd34d;
+  font-size: 13px;
+  color: #92400e;
+  font-style: italic;
+}
+
+.debug-hint code {
+  background: #fef08a;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 12px;
 }
 
 .settings-card {
