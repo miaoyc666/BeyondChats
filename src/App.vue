@@ -1,313 +1,294 @@
 <template>
   <div id="app" class="app-container">
-    <el-container class="main-layout">
-      <!-- Header with title bar -->
-      <el-header class="app-header">
-        <div class="header-content">
-          <div class="app-title">
-            <span>BeyondChats</span>
-          </div>
-          <div class="window-controls">
-            <el-button
-              link
-              type="primary"
-              @click="minimizeWindow"
-            >
-              <el-icon><Minus /></el-icon>
-            </el-button>
-            <el-button
-              link
-              type="primary"
-              @click="maximizeWindow"
-            >
-              <el-icon><FullScreen /></el-icon>
-            </el-button>
-            <el-button
-              link
-              type="primary"
-              @click="closeWindow"
-            >
-              <el-icon><Close /></el-icon>
-            </el-button>
+    <!-- 顶部导航栏 -->
+    <div class="app-header">
+      <div class="header-left">
+        <h1 class="app-title">💬 BeyondChats</h1>
+      </div>
+
+      <div class="header-center">
+        <div class="ai-selector">
+          <div
+            v-for="provider in providers"
+            :key="provider.id"
+            class="ai-badge"
+            :class="{ selected: selectedProviders.includes(provider.id) }"
+            @click="toggleProvider(provider.id)"
+          >
+            <img :src="provider.icon" :alt="provider.name" class="badge-icon" />
+            <span class="badge-label">{{ provider.name }}</span>
           </div>
         </div>
-      </el-header>
+      </div>
 
-      <el-container class="app-body">
-        <!-- Sidebar for AI selection -->
-        <el-aside class="app-sidebar" width="250px">
-          <div class="sidebar-content">
-            <div class="ai-list">
-              <div class="section-title">Available AI Models</div>
-              <div
-                v-for="ai in availableAIs"
-                :key="ai.id"
-                class="ai-item"
-                :class="{ active: activeAI === ai.id }"
-                @click="selectAI(ai.id)"
-              >
-                <div class="ai-icon">
-                  <img :src="ai.icon" :alt="ai.name" />
-                </div>
-                <div class="ai-info">
-                  <div class="ai-name">{{ ai.name }}</div>
-                  <div class="ai-status">
-                    <el-tag
-                      :type="ai.configured ? 'success' : 'warning'"
-                      size="small"
-                    >
-                      {{ ai.configured ? 'Ready' : 'Not Configured' }}
-                    </el-tag>
-                  </div>
-                </div>
-              </div>
-            </div>
+      <div class="header-right">
+        <el-button
+          type="primary"
+          icon="Setting"
+          circle
+          @click="goToSettings"
+        />
+      </div>
+    </div>
 
-            <el-divider />
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+      <!-- 统一输入区域 -->
+      <div class="input-section">
+        <UnifiedInput
+          v-model="currentMessage"
+          :selected-providers="selectedProviders"
+          @send="handleSendMessage"
+        />
+      </div>
 
-            <div class="sidebar-actions">
-              <el-button type="primary" @click="goToSettings" block>
-                <el-icon><Setting /></el-icon> Settings
-              </el-button>
-              <el-button @click="clearAllChats" block>
-                <el-icon><Delete /></el-icon> Clear History
-              </el-button>
-            </div>
-          </div>
-        </el-aside>
+      <!-- AI卡片网格 -->
+      <div class="cards-grid" :style="gridStyle">
+        <AICard
+          v-for="provider in visibleProviders"
+          :key="provider.id"
+          :provider="provider"
+          :config="getCardConfig(provider.id)"
+          class="card-item"
+        />
+      </div>
+    </div>
 
-        <!-- Main content area -->
-        <el-main class="app-main">
-          <router-view />
-        </el-main>
-      </el-container>
-    </el-container>
+    <!-- 路由视图（用于设置页面） -->
+    <router-view />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAppStore } from '@/stores/app';
-import { Setting, Delete, Minus, FullScreen, Close } from '@element-plus/icons-vue';
+import { useAppStore, useLayoutStore } from '@/stores';
+import UnifiedInput from '@/components/chat/UnifiedInput.vue';
+import AICard from '@/components/chat/AICard.vue';
 
 const router = useRouter();
 const appStore = useAppStore();
+const layoutStore = useLayoutStore();
 
-const activeAI = ref<string>('chatgpt');
-const availableAIs = ref([
-  {
-    id: 'chatgpt',
-    name: 'ChatGPT',
-    icon: '/icons/chatgpt.svg',
-    configured: false,
+// 响应式数据
+const providers = computed(() => appStore.providers);
+const selectedProviders = computed(() => appStore.selectedProviders);
+const currentMessage = computed({
+  get: () => appStore.currentMessage,
+  set: (val) => {
+    appStore.currentMessage = val;
   },
-  {
-    id: 'gemini',
-    name: 'Gemini',
-    icon: '/icons/gemini.svg',
-    configured: false,
-  },
-  {
-    id: 'douban',
-    name: 'Douban (豆包)',
-    icon: '/icons/douban.svg',
-    configured: false,
-  },
-  {
-    id: 'qwen',
-    name: 'Qwen (千问)',
-    icon: '/icons/qwen.svg',
-    configured: false,
-  },
-  {
-    id: 'yuanbao',
-    name: 'Yuanbao (元宝)',
-    icon: '/icons/yuanbao.svg',
-    configured: false,
-  },
-]);
-
-onMounted(() => {
-  loadAIConfigurations();
 });
 
-const loadAIConfigurations = () => {
-  // Load AI configurations from store
-  const configs = appStore.getAIConfigurations();
-  availableAIs.value = availableAIs.value.map((ai) => ({
-    ...ai,
-    configured: configs[ai.id]?.enabled || false,
-  }));
+// 可见的 providers（被选中或启用的）
+const visibleProviders = computed(() => {
+  return providers.value.filter(provider => {
+    const config = layoutStore.getCardConfig(provider.id);
+    return provider.isEnabled && config.isVisible && !config.isHidden;
+  });
+});
+
+// 网格样式
+const gridStyle = computed(() => {
+  const { columns, gap } = layoutStore.gridSettings;
+  return {
+    display: 'grid',
+    gridTemplateColumns: `repeat(${columns}, 1fr)`,
+    gap: `${gap}px`,
+    padding: `${gap}px`,
+    alignItems: 'start',
+  };
+});
+
+// 切换 provider 选择
+const toggleProvider = (providerId: string) => {
+  const provider = appStore.getProvider(providerId);
+  if (provider) {
+    provider.isEnabled = !provider.isEnabled;
+    appStore.toggleProviderSelection(providerId);
+  }
 };
 
-const selectAI = (aiId: string) => {
-  activeAI.value = aiId;
-  router.push(`/chat/${aiId}`);
+// 获取卡片配置
+const getCardConfig = (providerId: string) => {
+  return layoutStore.getCardConfig(providerId);
 };
 
+// 发送消息
+const handleSendMessage = async (message: string) => {
+  // 广播消息到所有选中的 provider
+  const aiCardRefs = document.querySelectorAll('.ai-card');
+  // 具体的消息发送逻辑可以在这里实现
+  console.log('Sending message:', message, 'to providers:', selectedProviders.value);
+};
+
+// 前往设置页面
 const goToSettings = () => {
   router.push('/settings');
 };
 
-const clearAllChats = () => {
-  appStore.clearAllChats();
+// 响应式布局
+const handleResize = () => {
+  layoutStore.updateWindowSize(window.innerWidth, window.innerHeight);
 };
 
-const minimizeWindow = () => {
-  window.electron.minimizeWindow();
-};
+// 生命周期
+onMounted(() => {
+  // 初始化布局
+  layoutStore.updateWindowSize(window.innerWidth, window.innerHeight);
+  layoutStore.initializeCardConfigs(providers.value.map(p => p.id));
+  layoutStore.loadLayoutConfig();
 
-const maximizeWindow = () => {
-  window.electron.maximizeWindow();
-};
+  // 监听窗口大小变化
+  window.addEventListener('resize', handleResize);
+});
 
-const closeWindow = () => {
-  window.electron.closeWindow();
-};
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+  layoutStore.saveLayoutConfig();
+});
 </script>
 
 <style scoped lang="css">
 .app-container {
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: #f5f7fa;
 }
 
-.main-layout {
-  width: 100%;
-  height: 100%;
-}
-
+/* 顶部导航栏 */
 .app-header {
-  background: #fff;
-  border-bottom: 1px solid #ebeef5;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  user-select: none;
-  -webkit-app-region: drag;
-}
-
-.header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
-  height: 100%;
+  padding: 12px 20px;
+  background: #fff;
+  border-bottom: 1px solid #ebeef5;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.header-left {
+  min-width: 150px;
 }
 
 .app-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
   color: #1f2937;
-  -webkit-app-region: no-drag;
 }
 
-.window-controls {
-  display: flex;
-  gap: 4px;
-  -webkit-app-region: no-drag;
-}
-
-.app-body {
-  height: calc(100% - 60px);
-}
-
-.app-sidebar {
-  background: #fff;
-  border-right: 1px solid #ebeef5;
-  overflow-y: auto;
-}
-
-.sidebar-content {
-  padding: 16px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.ai-list {
+.header-center {
   flex: 1;
-}
-
-.section-title {
-  font-size: 12px;
-  color: #909399;
-  text-transform: uppercase;
-  font-weight: 600;
-  margin-bottom: 8px;
-  letter-spacing: 0.5px;
-}
-
-.ai-item {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  margin-bottom: 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: #f5f7fa;
-
-  &:hover {
-    background: #e4e7f1;
-  }
-
-  &.active {
-    background: #e6f7ff;
-    border-left: 3px solid #409eff;
-    padding-left: 9px;
-  }
-}
-
-.ai-icon {
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-  background: #f0f0f0;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-}
-
-.ai-info {
-  flex: 1;
   min-width: 0;
 }
 
-.ai-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #1f2937;
-  margin-bottom: 4px;
-}
-
-.ai-status {
+.ai-selector {
   display: flex;
-  gap: 4px;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-height: 50px;
+  overflow-y: auto;
 }
 
-.sidebar-actions {
+.ai-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #f0f2f5;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.ai-badge:hover {
+  background: #e6e8eb;
+}
+
+.ai-badge.selected {
+  background: #409eff;
+  border-color: #0a66c2;
+  color: #fff;
+}
+
+.badge-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+}
+
+.badge-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.header-right {
+  min-width: 50px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 主要内容区域 */
+.main-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  overflow: hidden;
+  gap: 12px;
+  padding: 8px;
 }
 
-.app-main {
-  padding: 0;
-  background: #f5f7fa;
+.input-section {
+  flex-shrink: 0;
+  padding: 0 8px;
+}
+
+.cards-grid {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+.card-item {
+  width: 100%;
+  min-width: 300px;
+}
+
+/* 响应式布局 */
+@media (max-width: 1400px) {
+  .app-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-center {
+    width: 100%;
+    order: 3;
+  }
+
+  .ai-selector {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-header {
+    padding: 8px 12px;
+  }
+
+  .app-title {
+    font-size: 16px;
+  }
 }
 </style>
