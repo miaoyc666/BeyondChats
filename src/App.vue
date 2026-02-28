@@ -20,7 +20,7 @@
               type="primary"
               @click="maximizeWindow"
             >
-              <el-icon><Square /></el-icon>
+              <el-icon><FullScreen /></el-icon>
             </el-button>
             <el-button
               link
@@ -89,7 +89,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAppStore } from '@/stores/app';
-import { Setting, Delete, Minus, Square, Close } from '@element-plus/icons-vue';
+import { Setting, Delete, Minus, FullScreen, Close } from '@element-plus/icons-vue';
 
 const router = useRouter();
 const appStore = useAppStore();
