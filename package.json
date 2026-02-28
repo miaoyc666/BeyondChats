@@ -5,8 +5,8 @@
   "main": "dist/electron/main.js",
   "homepage": "./",
   "author": {
-    "name": "BeyondChats",
-    "email": "dev@beyondchats.com"
+    "name": "miaoyc",
+    "email": "miaoyc666@outlook.com"
   },
   "license": "MIT",
   "scripts": {
