@@ -5,7 +5,6 @@
       <el-header class="app-header">
         <div class="header-content">
           <div class="app-title">
-            <img src="@/assets/logo.svg" alt="BeyondChats" class="logo" />
             <span>BeyondChats</span>
           </div>
           <div class="window-controls">
@@ -206,11 +205,6 @@ const closeWindow = () => {
   font-weight: 600;
   color: #1f2937;
   -webkit-app-region: no-drag;
-}
-
-.logo {
-  width: 24px;
-  height: 24px;
 }
 
 .window-controls {
