@@ -37,6 +37,33 @@
     </div>
 
     <div class="header-right">
+      <!-- AI模型选择按钮 -->
+      <button
+        class="model-selector-btn"
+        :class="{ active: layoutStore.modelSelectorOpen }"
+        @click="layoutStore.toggleModelSelector()"
+      >
+        <el-icon><Select /></el-icon>
+        <span>AI模型</span>
+        <el-tag
+          v-if="respondingCount > 0"
+          type="warning"
+          size="small"
+        >{{ respondingCount }}</el-tag>
+        <el-icon class="arrow-icon" :class="{ open: layoutStore.modelSelectorOpen }"><ArrowDown /></el-icon>
+      </button>
+
+      <!-- 统一输入按钮 -->
+      <button
+        class="model-selector-btn"
+        :class="{ active: layoutStore.inputPanelOpen }"
+        @click="layoutStore.toggleInputPanel()"
+      >
+        <el-icon><EditPen /></el-icon>
+        <span>统一输入</span>
+        <el-icon class="arrow-icon" :class="{ open: layoutStore.inputPanelOpen }"><ArrowDown /></el-icon>
+      </button>
+
       <!-- 登录状态指示器 -->
       <div class="login-status">
         <el-badge
@@ -100,20 +127,28 @@ import {
   Moon,
   Minus,
   Close,
-  FullScreen
+  FullScreen,
+  Select,
+  ArrowDown,
+  EditPen
 } from '@element-plus/icons-vue'
-import { useAppStore, useChatStore } from '../../stores'
+import { useAppStore, useChatStore, useLayoutStore } from '../../stores'
 
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
 const chatStore = useChatStore()
+const layoutStore = useLayoutStore()
 
 // 计算属性
 const activeRoute = computed(() => route.path)
 const isDarkMode = computed(() => appStore.isDarkMode)
 const loggedInCount = computed(() => chatStore.loggedInCount)
 const totalProviders = computed(() => chatStore.totalProviders)
+const respondingCount = computed(() => {
+  const providers = chatStore.providers
+  return providers.filter((p: any) => p.isLoggedIn).length
+})
 
 /**
  * 处理菜单选择
@@ -164,8 +199,8 @@ const toggleFullScreen = (): void => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 60px;
-  padding: 0 20px;
+  height: 44px;
+  padding: 0 16px;
   background-color: var(--el-bg-color);
   border-bottom: 1px solid var(--el-border-color);
 }
@@ -215,14 +250,14 @@ const toggleFullScreen = (): void => {
   display: flex;
   align-items: center;
   margin: 0;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--el-color-primary);
 }
 
 .title-icon {
-  margin-right: 8px;
-  font-size: 24px;
+  margin-right: 6px;
+  font-size: 18px;
 }
 
 .header-center {
@@ -263,6 +298,46 @@ const toggleFullScreen = (): void => {
   display: flex;
   gap: 4px;
   margin-left: 12px;
+}
+
+/* Header 里的 AI 模型选择触发按钮 */
+.model-selector-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  height: 28px;
+  background: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+  user-select: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+}
+
+.model-selector-btn:hover {
+  background: var(--el-color-primary-light-9);
+  border-color: var(--el-color-primary);
+  color: var(--el-color-primary);
+}
+
+.model-selector-btn.active {
+  background: var(--el-color-primary-light-9);
+  border-color: var(--el-color-primary);
+  color: var(--el-color-primary);
+}
+
+.model-selector-btn .arrow-icon {
+  font-size: 11px;
+  transition: transform 0.25s ease;
+}
+
+.model-selector-btn .arrow-icon.open {
+  transform: rotate(180deg);
 }
 
 /* 菜单样式覆盖 */

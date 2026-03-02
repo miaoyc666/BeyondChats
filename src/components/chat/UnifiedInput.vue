@@ -1,185 +1,116 @@
 <template>
   <div class="unified-input">
-    <el-card class="input-card">
-      <div class="input-header">
-        <div class="header-left">
-          <el-icon class="input-icon">
-            <EditPen />
-          </el-icon>
-          <span class="input-title">统一输入</span>
-        </div>
-        <div class="header-right">
-          <el-tag
-            v-if="hasRespondingAI"
-            type="warning"
-            size="small"
-            class="ai-status-tag"
-          >
-            {{ respondingAICount }} 个AI回答中
-          </el-tag>
-        </div>
-      </div>
+    <transition name="input-panel-slide">
+      <el-card v-show="layoutStore.inputPanelOpen" class="input-card">
 
-      <!-- 模型选择器 -->
-      <div class="model-selector">
-        <div class="selector-header">
-          <el-icon class="selector-icon">
-            <Select />
-          </el-icon>
-          <span class="selector-title">选择AI模型</span>
-        </div>
-        <el-checkbox-group
-          v-model="selectedProviders"
-          class="provider-checkboxes"
-          @change="handleProviderSelection"
-        >
-          <el-checkbox
-            v-for="provider in sortedProviders"
-            :key="provider.id"
-            :label="provider.id"
-            :disabled="provider.loadingState === 'loading'"
-            class="provider-checkbox"
-            draggable="true"
-            @dragstart="handleDragStart($event, provider)"
-            @dragover="handleDragOver($event)"
-            @dragleave="handleDragLeave($event)"
-            @drop="handleDrop($event, provider)"
-            @dragend="handleDragEnd"
+      <!-- 模型选择器面板（由 Header 按钮控制展开/收起） -->
+      <transition name="model-selector-slide">
+        <div v-show="layoutStore.modelSelectorOpen" class="model-selector-panel">
+          <div class="model-selector-body">
+          <el-checkbox-group
+            v-model="selectedProviders"
+            class="provider-checkboxes"
+            @change="handleProviderSelection"
           >
-            <div class="provider-option">
-              <img
-                :src="provider.icon"
-                :alt="provider.name"
-                class="provider-icon-small"
-                @error="handleIconError"
-              >
-              <span class="provider-name">{{ provider.name }}</span>
-              <!-- AI状态显示 -->
-              <el-tag
-                v-if="getProviderAIStatus(provider.id) === 'responding'"
-                type="warning"
-                size="small"
-                class="ai-status-tag"
-              >
-                回答中
-              </el-tag>
-              <el-tag
-                v-else-if="provider.isLoggedIn && selectedProviders.includes(provider.id)"
-                type="success"
-                size="small"
-                class="status-tag"
-              >
-                已登录
-              </el-tag>
-              <el-icon
-                v-if="provider.loadingState === 'loading'"
-                class="loading-icon"
-              >
-                <Loading />
-              </el-icon>
-            </div>
-          </el-checkbox>
-        </el-checkbox-group>
-      </div>
+            <el-checkbox
+              v-for="provider in sortedProviders"
+              :key="provider.id"
+              :label="provider.id"
+              :disabled="provider.loadingState === 'loading'"
+              class="provider-checkbox"
+              draggable="true"
+              @dragstart="handleDragStart($event, provider)"
+              @dragover="handleDragOver($event)"
+              @dragleave="handleDragLeave($event)"
+              @drop="handleDrop($event, provider)"
+              @dragend="handleDragEnd"
+            >
+              <div class="provider-option">
+                <img
+                  :src="provider.icon"
+                  :alt="provider.name"
+                  class="provider-icon-small"
+                  @error="handleIconError"
+                >
+                <span class="provider-name">{{ provider.name }}</span>
+                <!-- AI状态显示 -->
+                <el-tag
+                  v-if="getProviderAIStatus(provider.id) === 'responding'"
+                  type="warning"
+                  size="small"
+                  class="ai-status-tag"
+                >
+                  回答中
+                </el-tag>
+                <el-tag
+                  v-else-if="provider.isLoggedIn && selectedProviders.includes(provider.id)"
+                  type="success"
+                  size="small"
+                  class="status-tag"
+                >
+                  已登录
+                </el-tag>
+                <el-icon
+                  v-if="provider.loadingState === 'loading'"
+                  class="loading-icon"
+                >
+                  <Loading />
+                </el-icon>
+              </div>
+            </el-checkbox>
+          </el-checkbox-group>
+          </div>
+        </div>
+      </transition>
 
-      <div class="input-content">
+      <!-- 输入区域 -->
+      <div class="input-section">
+        <div class="input-content">
+        <!-- 左：文本输入框 -->
         <div class="textarea-container">
           <el-input
             ref="textareaRef"
             v-model="currentMessage"
-            type="textarea"
-            :rows="textareaRows"
             :placeholder="inputPlaceholder"
             :disabled="loggedInCount === 0"
             class="message-input"
             data-testid="message-input"
+            @keydown.enter.exact.prevent="handleSend"
             @keydown.ctrl.enter="handleSend"
             @keydown.meta.enter="handleSend"
             @input="handleInput"
             @focus="handleFocus"
             @blur="handleBlur"
           />
-          <div
-            class="textarea-resize-handle"
-            title="拖拽调整大小"
-            @mousedown="startResize"
-            @touchstart="startResize"
-          />
-          <div
-            class="textarea-expand-button"
-            :title="isExpanded ? '收起输入框' : '全屏输入'"
-            @click="toggleExpand"
-          >
-            <el-icon>{{ isExpanded ? 'Minus' : 'Plus' }}</el-icon>
-          </div>
         </div>
 
+        <!-- 右：按钮区域 -->
         <div class="input-actions">
-          <div class="actions-left">
-            <el-button
-              :icon="Refresh"
-              size="small"
-              :disabled="hasSendingMessages"
-              data-testid="refresh-button"
-              @click="handleRefresh"
-            >
-              刷新连接
-            </el-button>
-
-            <el-button
-              :icon="Delete"
-              size="small"
-              :disabled="!currentMessage"
-              data-testid="clear-button"
-              @click="handleClear"
-            >
-              清空
-            </el-button>
-          </div>
-
-          <div class="actions-right">
-            <el-button
-              type="info"
-              :icon="Document"
-              :disabled="loggedInCount === 0"
-              data-testid="prompt-manager-button"
-              @click="handleOpenPromptManager"
-            >
-              Prompt 管理
-            </el-button>
-            <el-button
-              type="warning"
-              :icon="Lightning"
-              :disabled="loggedInCount === 0 || !quickPrompt"
-              :title="quickPrompt || '暂无快捷 Prompt'"
-              data-testid="quick-prompt-button"
-              @click="handleApplyQuickPrompt"
-            >
-              快捷 Prompt
-            </el-button>
-            <el-button
-              type="success"
-              :icon="Plus"
-              :disabled="loggedInCount === 0"
-              data-testid="new-chat-button"
-              @click="handleNewChat"
-            >
-              新建对话
-            </el-button>
-            <el-button
-              type="primary"
-              :icon="Position"
-              :loading="hasSendingMessages"
-              :disabled="!currentMessage || loggedInCount === 0 || hasRespondingAI"
-              data-testid="send-button"
-              @click="handleSend"
-            >
-              发送到所有AI (Ctrl+Enter)
-            </el-button>
-          </div>
+          <el-button
+            type="success"
+            :icon="Plus"
+            :disabled="loggedInCount === 0"
+            data-testid="new-chat-button"
+            @click="handleNewChat"
+          >
+            新建对话
+          </el-button>
+          <el-button
+            type="primary"
+            :icon="Position"
+            :loading="hasSendingMessages"
+            :disabled="!currentMessage || loggedInCount === 0 || hasRespondingAI"
+            data-testid="send-button"
+            @click="handleSend"
+          >
+            发送 (Enter)
+          </el-button>
+        </div>
         </div>
       </div>
-    </el-card>
+
+      </el-card>
+    </transition>
 
     <PromptManager
       v-model="promptManagerVisible"
@@ -194,16 +125,17 @@ import {
   computed, onMounted, onUnmounted, ref, nextTick
 } from 'vue'
 import {
-  EditPen, Position, Refresh, Delete, Select, Loading, Plus, Minus, Document, Rank, Lightning
+  EditPen, Position, Refresh, Delete, Select, Loading, Plus, Minus, Document, Rank, Lightning, ArrowDown
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { useChatStore } from '../../stores'
+import { useChatStore, useLayoutStore } from '../../stores'
 import { messageDispatcher } from '../../services/MessageDispatcher'
 import type { MessageSendResult } from '../../services/MessageDispatcher'
 import type { AIProvider } from '@/types'
 import PromptManager from './PromptManager.vue'
 
 const chatStore = useChatStore()
+const layoutStore = useLayoutStore()
 
 const draggedProvider = ref<AIProvider | null>(null)
 
@@ -1016,43 +948,66 @@ onUnmounted(() => {
   box-shadow: var(--el-box-shadow-light);
 }
 
-.input-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
+:deep(.input-card > .el-card__body) {
+  padding: 8px 16px;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.collapse-icon {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+  transition: transform 0.25s ease, color 0.2s ease;
 }
 
-.input-icon {
-  color: var(--el-color-primary);
-  font-size: 18px;
+.collapse-icon.is-collapsed {
+  transform: rotate(-90deg);
 }
 
-.input-title {
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-/* 模型选择器样式 */
-.model-selector {
-  margin-bottom: 16px;
-  padding: 16px;
+/* 模型选择器面板（嵌入在 input-card 顶部，由 Header 按钮驱动） */
+.model-selector-panel {
+  margin-bottom: 10px;
+  padding: 10px 16px;
   background: #f8f9fa;
   border-radius: 12px;
   border: 1px solid #e9ecef;
+  overflow: hidden;
 }
 
-.selector-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+/* 展开/收起动画 */
+.model-selector-slide-enter-active,
+.model-selector-slide-leave-active {
+  transition: all 0.25s ease;
+  max-height: 400px;
+}
+
+.model-selector-slide-enter-from,
+.model-selector-slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.model-selector-body {
+  /* 正常流 */
+}
+
+/* 输入区域 */
+.input-section {
+  /* 直接展示，无 header */
+}
+
+/* 统一输入面板展开/收起动画 */
+.input-panel-slide-enter-active,
+.input-panel-slide-leave-active {
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+
+.input-panel-slide-enter-from,
+.input-panel-slide-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 
 .selector-icon {
@@ -1294,8 +1249,14 @@ onUnmounted(() => {
 
 .input-content {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 12px;
+}
+
+.input-content .textarea-container {
+  flex: 1;
+  min-width: 0;
 }
 
 /* 输入框容器样式 */
@@ -1370,15 +1331,10 @@ onUnmounted(() => {
 /* 输入框操作区域样式 */
 .input-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: all 0.3s ease;
-}
-
-.actions-left,
-.actions-right {
-  display: flex;
+  flex-direction: column;
   gap: 8px;
+  flex-shrink: 0;
+  align-items: stretch;
 }
 
 /* 输入框样式优化 */
@@ -1387,19 +1343,10 @@ onUnmounted(() => {
   transition: all 0.3s ease;
 }
 
-:deep(.el-textarea__inner) {
-  resize: none;
-  min-height: 80px;
-  height: auto !important;
-  min-height: 80px !important;
+:deep(.el-input__inner) {
   line-height: 1.6;
   font-size: 14px;
   letter-spacing: 0.5px;
-  transition: all 0.3s ease;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  hyphens: auto;
-  box-sizing: border-box;
 }
 
 :deep(.el-textarea__inner:focus) {
@@ -1522,7 +1469,7 @@ onUnmounted(() => {
     justify-content: center;
   }
 
-  .model-selector {
+  .input-section {
     padding: 12px;
   }
 

@@ -26,6 +26,21 @@ export const useLayoutStore = defineStore('layout', () => {
   // 是否显示布局网格
   const showGrid = ref(false)
 
+  // 模型选择器面板是否展开（Header 触发，UnifiedInput 响应）
+  const modelSelectorOpen = ref(false)
+  const toggleModelSelector = () => {
+    modelSelectorOpen.value = !modelSelectorOpen.value
+  }
+  const closeModelSelector = () => {
+    modelSelectorOpen.value = false
+  }
+
+  // 统一输入面板是否展开（默认展开）
+  const inputPanelOpen = ref(true)
+  const toggleInputPanel = () => {
+    inputPanelOpen.value = !inputPanelOpen.value
+  }
+
   // 计算属性
   const availableWidth = computed(() => windowSize.value.width - gridSettings.value.gap * 2)
   const availableHeight = computed(() => windowSize.value.height - gridSettings.value.gap * 2)
@@ -309,7 +324,9 @@ export const useLayoutStore = defineStore('layout', () => {
           cardConfigs.value = config.cardConfigs
         }
         if (config.gridSettings) {
-          gridSettings.value = { ...gridSettings.value, ...config.gridSettings }
+          // 不覆盖 columns，始终以 store 默认值（3列）为准，用户可在设置页手动调整
+          const { columns: _ignored, ...rest } = config.gridSettings
+          gridSettings.value = { ...gridSettings.value, ...rest }
         }
         console.log('成功加载布局配置:', config.gridSettings)
       } else {
@@ -359,6 +376,11 @@ export const useLayoutStore = defineStore('layout', () => {
     saveLayoutConfig,
     loadLayoutConfig,
     getCardConfig,
-    updateCardTitle
+    updateCardTitle,
+    modelSelectorOpen,
+    toggleModelSelector,
+    closeModelSelector,
+    inputPanelOpen,
+    toggleInputPanel
   }
 })
