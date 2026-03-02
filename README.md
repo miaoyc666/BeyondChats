@@ -749,3 +749,9 @@ MIT License
 ---
 
 *本文基于BeyondChats v1.1.4版本进行分析，技术细节可能随版本更新而变化。*
+
+---
+
+## 致谢
+
+本项目基于 [ChatAllAI2](https://github.com/hqzqaq/chatAllAI2) 进行开发，感谢原作者 [@hqzqaq](https://github.com/hqzqaq) 的开源贡献，提供了多 AI 模型统一对话的核心思路与基础实现。
