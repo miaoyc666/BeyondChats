@@ -88,7 +88,7 @@ BeyondChats通过以下方式解决上述问题：
 #### 1. 安装与启动
 ```bash
 # 克隆项目
-git clone https://github.com/hqzqaq/chatAllAI2.git
+git clone https://github.com/miaoyc666/BeyondChats.git
 
 # 安装依赖
 npm install
@@ -103,7 +103,7 @@ npm run prod
 npm run build
 ```
 
-`安装包下载地址：[https://github.com/hqzqaq/chatAllAI2/releases](https://github.com/hqzqaq/chatAllAI2/releases)
+`安装包下载地址：[https://github.com/miaoyc666/BeyondChats/releases](https://github.com/miaoyc666/BeyondChats/releases)
 ，mac系统安装之后，需要执行如下命令才可运行应用：`
 ```sh
 sudo xattr -d com.apple.quarantine /Applications/BeyondChats.app
