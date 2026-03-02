@@ -1,3 +1,6 @@
-export { useAppStore } from './app';
-export { useLayoutStore } from './layout';
-export { useChatStore } from './chat';
+/**
+ * Pinia stores 入口文件
+ */
+export { useAppStore } from './app'
+export { useChatStore } from './chat'
+export { useLayoutStore } from './layout'

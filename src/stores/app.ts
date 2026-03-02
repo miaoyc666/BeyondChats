@@ -1,130 +1,137 @@
-import { defineStore } from 'pinia';
-import { ref, reactive } from 'vue';
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import type { UserPreferences, LayoutConfig } from '../types'
 
-export interface AIProvider {
-  id: string;
-  name: string;
-  icon: string;
-  url: string;
-  isEnabled: boolean;
-  isLoggedIn: boolean;
-  loadingState: 'idle' | 'loading' | 'loaded' | 'error';
-  lastError?: string;
-  webviewId: string;
-}
-
-export interface CardConfig {
-  isVisible: boolean;
-  isMinimized: boolean;
-  isMaximized: boolean;
-  isHidden: boolean;
-  size: {
-    width: number;
-    height: number;
-  };
-  zIndex: number;
-}
-
+/**
+ * 应用主状态管理
+ */
 export const useAppStore = defineStore('app', () => {
-  // Providers state
-  const providers = ref<AIProvider[]>([
-    {
-      id: 'chatgpt',
-      name: 'ChatGPT',
-      icon: '/icons/chatgpt.svg',
-      url: 'https://chat.openai.com',
-      isEnabled: false,
-      isLoggedIn: false,
-      loadingState: 'idle',
-      webviewId: 'chatgpt-webview',
-    },
-    {
-      id: 'gemini',
-      name: 'Gemini',
-      icon: '/icons/gemini.svg',
-      url: 'https://gemini.google.com',
-      isEnabled: false,
-      isLoggedIn: false,
-      loadingState: 'idle',
-      webviewId: 'gemini-webview',
-    },
-    {
-      id: 'qwen',
-      name: 'Qwen (千问)',
-      icon: '/icons/qwen.svg',
-      url: 'https://qianwen.aliyun.com',
-      isEnabled: false,
-      isLoggedIn: false,
-      loadingState: 'idle',
-      webviewId: 'qwen-webview',
-    },
-    {
-      id: 'douban',
-      name: 'Douban (豆包)',
-      icon: '/icons/douban.svg',
-      url: 'https://www.doubao.com',
-      isEnabled: false,
-      isLoggedIn: false,
-      loadingState: 'idle',
-      webviewId: 'douban-webview',
-    },
-    {
-      id: 'yuanbao',
-      name: 'Yuanbao (元宝)',
-      icon: '/icons/yuanbao.svg',
-      url: 'https://yuanbao.tencent.com',
-      isEnabled: false,
-      isLoggedIn: false,
-      loadingState: 'idle',
-      webviewId: 'yuanbao-webview',
-    },
-  ]);
+  // 应用版本
+  const appVersion = ref<string>('')
 
-  const selectedProviders = ref<string[]>([]);
-  const currentMessage = ref<string>('');
-  const sendingStatus = reactive<Record<string, 'idle' | 'sending' | 'sent' | 'error'>>({});
+  // 应用初始化状态
+  const isInitialized = ref<boolean>(false)
 
-  // Initialize sending status
-  providers.value.forEach(provider => {
-    sendingStatus[provider.id] = 'idle';
-  });
+  // 用户偏好设置
+  const userPreferences = ref<UserPreferences>({
+    theme: 'auto',
+    language: 'zh-CN',
+    autoSave: true,
+    notifications: true,
+    shortcuts: {}
+  })
 
-  // Get single provider
-  const getProvider = (providerId: string) => {
-    return providers.value.find(p => p.id === providerId);
-  };
-
-  // Update provider login status
-  const updateProviderLoginStatus = (providerId: string, isLoggedIn: boolean) => {
-    const provider = getProvider(providerId);
-    if (provider) {
-      provider.isLoggedIn = isLoggedIn;
+  // 布局配置
+  const layoutConfig = ref<LayoutConfig>({
+    cardPositions: [],
+    cardSizes: [],
+    gridLayout: {
+      columns: 3,
+      rows: 2,
+      gap: 16
+    },
+    theme: {
+      primaryColor: '#409EFF',
+      backgroundColor: '#f5f5f5'
     }
-  };
+  })
 
-  // Toggle provider selection
-  const toggleProviderSelection = (providerId: string) => {
-    const index = selectedProviders.value.indexOf(providerId);
-    if (index > -1) {
-      selectedProviders.value.splice(index, 1);
-    } else {
-      selectedProviders.value.push(providerId);
+  // 计算属性
+  const isDarkMode = computed(() => {
+    if (userPreferences.value.theme === 'auto') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches
     }
-  };
+    return userPreferences.value.theme === 'dark'
+  })
 
-  // Initialize conversations (if needed)
-  const initializeConversations = () => {
-    // Can be used to load saved conversations
-  };
+  /**
+   * 初始化应用
+   */
+  const initializeApp = async(): Promise<void> => {
+    try {
+      // 获取应用版本
+      if (window.electronAPI) {
+        appVersion.value = await window.electronAPI.getAppVersion()
+      }
+
+      // 加载用户配置
+      await loadUserPreferences()
+
+      isInitialized.value = true
+    } catch (error) {
+      console.error('Failed to initialize app:', error)
+    }
+  }
+
+  /**
+   * 加载用户偏好设置
+   */
+  const loadUserPreferences = async(): Promise<void> => {
+    try {
+      const saved = localStorage.getItem('userPreferences')
+      if (saved) {
+        userPreferences.value = { ...userPreferences.value, ...JSON.parse(saved) }
+      }
+    } catch (error) {
+      console.error('Failed to load user preferences:', error)
+    }
+  }
+
+  /**
+   * 保存用户偏好设置
+   */
+  const saveUserPreferences = async(): Promise<void> => {
+    try {
+      localStorage.setItem('userPreferences', JSON.stringify(userPreferences.value))
+    } catch (error) {
+      console.error('Failed to save user preferences:', error)
+    }
+  }
+
+  /**
+   * 加载布局配置
+   */
+  const loadLayoutConfig = async(): Promise<void> => {
+    try {
+      const saved = localStorage.getItem('layoutConfig')
+      if (saved) {
+        layoutConfig.value = { ...layoutConfig.value, ...JSON.parse(saved) }
+      }
+    } catch (error) {
+      console.error('Failed to load layout config:', error)
+    }
+  }
+
+  /**
+   * 保存布局配置
+   */
+  const saveLayoutConfig = async(): Promise<void> => {
+    try {
+      localStorage.setItem('layoutConfig', JSON.stringify(layoutConfig.value))
+    } catch (error) {
+      console.error('Failed to save layout config:', error)
+    }
+  }
+
+  /**
+   * 更新主题
+   */
+  const updateTheme = (theme: 'light' | 'dark' | 'auto'): void => {
+    userPreferences.value.theme = theme
+    saveUserPreferences()
+  }
 
   return {
-    providers,
-    selectedProviders,
-    currentMessage,
-    sendingStatus,
-    getProvider,
-    updateProviderLoginStatus,
-    toggleProviderSelection,
-    initializeConversations,
-  };
-});
+    appVersion,
+    isInitialized,
+    userPreferences,
+    layoutConfig,
+    isDarkMode,
+    initializeApp,
+    loadUserPreferences,
+    saveUserPreferences,
+    loadLayoutConfig,
+    saveLayoutConfig,
+    updateTheme
+  }
+})

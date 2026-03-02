@@ -1,8 +1,19 @@
 /**
  * WebView Preload Script
- * This script runs in the isolated context of WebView
+ * This script is injected into the <webview> tag.
+ * It exposes a secure API for the guest page to communicate with the main process.
  */
+import { contextBridge, ipcRenderer } from 'electron'
 
-// 由于 WebView 使用分离的分区，不需要特别的 API 暴露
-// WebView 会自动管理存储和 session
-console.log('[WebView Preload] Loaded successfully');
+console.log('[WebView Preload] Script loaded.')
+
+contextBridge.exposeInMainWorld('__WEBVIEW_API__', {
+  /**
+   * Sends a message to the main process.
+   * @param channel The IPC channel to send the message on.
+   * @param data The data to send.
+   */
+  sendToHost: (channel: string, data: any) => {
+    ipcRenderer.send(channel, data)
+  }
+})

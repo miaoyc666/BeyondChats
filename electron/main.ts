@@ -1,191 +1,139 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
-import * as path from 'path'
-import { isDev } from './utils'
+import { app, BrowserWindow } from 'electron'
+import { WindowManager } from './managers/WindowManager'
+import { SessionManager } from './managers/SessionManager'
+import { IPCHandler } from './managers/IPCHandler'
 
-let mainWindow: BrowserWindow | null = null
+/**
+ * 应用管理器实例
+ */
+let windowManager: WindowManager | null = null
+let sessionManager: SessionManager | null = null
+let ipcHandler: IPCHandler | null = null
 
-// Get the correct path for preload script
-const getPreloadPath = (): string => {
-  const preloadPath = path.join(__dirname, 'preload.js')
-  return preloadPath
+/**
+ * 初始化应用
+ */
+async function initializeApp(): Promise<void> {
+  try {
+    // 创建管理器实例
+    windowManager = new WindowManager()
+    sessionManager = new SessionManager()
+    ipcHandler = new IPCHandler(windowManager, sessionManager)
+
+    // 创建主窗口
+    await windowManager.createMainWindow()
+
+    // 设置事件监听
+    setupEventListeners()
+
+    console.log('Application initialized successfully')
+  } catch (error) {
+    console.error('Failed to initialize application:', error)
+    app.quit()
+  }
 }
 
-// Get the correct path for index.html
-const getIndexPath = (): string => {
-  if (isDev) {
-    return 'http://localhost:5173'
-  }
-  // In production, renderer files are in dist/renderer/
-  const indexPath = path.join(__dirname, '../renderer/index.html')
-  return `file://${indexPath}`
+/**
+ * 设置事件监听器
+ */
+function setupEventListeners(): void {
+  if (!windowManager || !sessionManager || !ipcHandler) return
+
+  // 窗口管理器事件
+  windowManager.on('window-created', ({ id }) => {
+    console.log(`Window created: ${id}`)
+  })
+
+  windowManager.on('window-destroyed', ({ id }) => {
+    console.log(`Window destroyed: ${id}`)
+  })
+
+  // 会话管理器事件
+  sessionManager.on('session-created', ({ providerId }) => {
+    console.log(`Session created for provider: ${providerId}`)
+  })
+
+  sessionManager.on('session-saved', ({ providerId }) => {
+    console.log(`Session saved for provider: ${providerId}`)
+  })
+
+  sessionManager.on('session-loaded', ({ providerId }) => {
+    console.log(`Session loaded for provider: ${providerId}`)
+  })
+
+  // IPC处理器事件
+  ipcHandler.on('error-reported', (error) => {
+    console.error('Error reported from renderer:', error)
+  })
+
+  ipcHandler.on('message-received', ({ messageId, providerId }) => {
+    console.log(`Message received: ${messageId} from ${providerId}`)
+  })
 }
 
-const createWindow = (): void => {
-  mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    minWidth: 1000,
-    minHeight: 600,
-    webPreferences: {
-      preload: getPreloadPath(),
-      nodeIntegration: false,
-      contextIsolation: true,
-      webviewTag: true, // Enable <webview> tag
-      webSecurity: false, // Allow loading external websites
-    },
-  })
+/**
+ * 应用准备就绪时初始化
+ */
+app.whenReady().then(() => {
+  initializeApp()
 
-  const startUrl = getIndexPath()
-  console.log(`[Electron] Loading URL: ${startUrl}`)
-  console.log(`[Electron] isDev: ${isDev}`)
-  console.log(`[Electron] app.isPackaged: ${app.isPackaged}`)
-
-  mainWindow.loadURL(startUrl).catch((err) => {
-    console.error('[Electron] Failed to load URL:', err)
-  })
-
-  // Open devTools for debugging in dev mode only
-  if (isDev) {
-    mainWindow.webContents.openDevTools()
-  }
-
-  mainWindow.on('closed', () => {
-    mainWindow = null
-  })
-
-  // Log when page loads
-  mainWindow.webContents.on('did-finish-load', () => {
-    console.log('[Electron] Page loaded successfully')
-  })
-
-  // Log any errors
-  mainWindow.webContents.on('crashed', () => {
-    console.error('[Electron] Renderer process crashed')
-  })
-
-  // Handle link clicks to open in browser
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('http:') || url.startsWith('https:')) {
-      shell.openExternal(url)
-      return { action: 'deny' }
+  app.on('activate', async() => {
+    // 在 macOS 上，当点击 dock 图标并且没有其他窗口打开时，
+    // 通常在应用程序中重新创建一个窗口。
+    if (BrowserWindow.getAllWindows().length === 0) {
+      if (windowManager) {
+        await windowManager.createMainWindow()
+      }
     }
-    return { action: 'allow' }
   })
-}
+})
 
-app.on('ready', createWindow)
-
+/**
+ * 当所有窗口都被关闭时退出应用
+ */
 app.on('window-all-closed', () => {
+  // 在 macOS 上，除非用户用 Cmd + Q 确定地退出，
+  // 否则绝大部分应用及其菜单栏会保持激活。
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
 
-app.on('activate', () => {
-  if (mainWindow === null) {
-    createWindow()
+/**
+ * 应用即将退出时的清理工作
+ */
+app.on('before-quit', async() => {
+  console.log('Application is quitting, performing cleanup...')
+
+  try {
+    // 保存所有会话
+    if (sessionManager) {
+      await sessionManager.destroy()
+    }
+
+    // 销毁IPC处理器
+    if (ipcHandler) {
+      ipcHandler.destroy()
+    }
+
+    // 销毁所有窗口
+    if (windowManager) {
+      windowManager.destroyAllWindows()
+    }
+
+    console.log('Cleanup completed')
+  } catch (error) {
+    console.error('Error during cleanup:', error)
   }
 })
 
-// IPC handlers for window control
-ipcMain.handle('get-app-version', () => {
-  return app.getVersion()
+// 处理未捕获的异常
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error)
+  app.quit()
 })
 
-ipcMain.handle('get-app-path', () => {
-  return app.getAppPath()
-})
-
-ipcMain.handle('get-system-info', () => {
-  return {
-    platform: process.platform,
-    arch: process.arch,
-    nodeVersion: process.version,
-  }
-})
-
-ipcMain.handle('minimize-window', () => {
-  mainWindow?.minimize()
-})
-
-ipcMain.handle('maximize-window', () => {
-  if (mainWindow?.isMaximized()) {
-    mainWindow.unmaximize()
-  } else {
-    mainWindow?.maximize()
-  }
-})
-
-ipcMain.handle('unmaximize-window', () => {
-  mainWindow?.unmaximize()
-})
-
-ipcMain.handle('is-maximized', () => {
-  return mainWindow?.isMaximized() || false
-})
-
-ipcMain.handle('close-window', () => {
-  mainWindow?.close()
-})
-
-ipcMain.handle('toggle-fullscreen', () => {
-  if (mainWindow) {
-    mainWindow.setFullScreen(!mainWindow.isFullScreen())
-  }
-})
-
-// IPC handlers for WebView
-ipcMain.handle('send-message-to-webview', (event, { webviewId, message }) => {
-  console.log(`[IPC] Sending message to ${webviewId}:`, message)
-  return { success: true }
-})
-
-ipcMain.handle('refresh-webview', (event, webviewId) => {
-  console.log(`[IPC] Refreshing webview ${webviewId}`)
-  return { success: true }
-})
-
-ipcMain.handle('refresh-all-webviews', () => {
-  console.log(`[IPC] Refreshing all webviews`)
-  return { success: true }
-})
-
-ipcMain.handle('load-webview', (event, { webviewId, url }) => {
-  console.log(`[IPC] Loading webview ${webviewId} with URL ${url}`)
-  return { success: true }
-})
-
-ipcMain.handle('open-devtools', (event, webviewId) => {
-  console.log(`[IPC] Opening devtools for ${webviewId}`)
-  return { success: true }
-})
-
-// IPC handlers for session management
-ipcMain.handle('session-save', (event, data) => {
-  console.log(`[IPC] Saving session for provider: ${data.providerId}`)
-  return { success: true }
-})
-
-ipcMain.handle('session-load', (event, data) => {
-  console.log(`[IPC] Loading session for provider: ${data.providerId}`)
-  return { exists: true, sessionData: null }
-})
-
-ipcMain.handle('session-clear', (event, data) => {
-  console.log(`[IPC] Clearing session for provider: ${data.providerId}`)
-  return { success: true }
-})
-
-// IPC handler for getting preload path for webviews
-ipcMain.handle('get-preload-path', (event, scriptName: string = 'webview-preload.js') => {
-  const preloadPath = path.join(__dirname, scriptName)
-  console.log(`[IPC] Returning preload path: ${preloadPath}`)
-  return preloadPath
-})
-
-// Open external links in default browser
-ipcMain.handle('open-external', (event, url: string) => {
-  console.log(`[IPC] Opening external URL: ${url}`)
-  shell.openExternal(url)
-  return { success: true }
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason)
+  app.quit()
 })

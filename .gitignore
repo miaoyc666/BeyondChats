@@ -9,35 +9,35 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-electron
 dist-ssr
-coverage
-.DS_Store
+*.local
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
-.project
-.classpath
-.c9/
-*.launch
-.settingsSyncIgnore
-*.sublime-workspace
-
-# Environment files
-.env
-.env.local
-.env.*.local
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # Electron
-dist-electron
-out
+out/
+app/
+release/
 
-# Build output
-/release
-*.dmg
-*.exe
-*.AppImage
-*.deb
-*.rpm
-*.snap
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+dist-prod

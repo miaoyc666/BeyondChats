@@ -1,294 +1,132 @@
 <template>
-  <div id="app" class="app-container">
-    <!-- 顶部导航栏 -->
-    <div class="app-header">
-      <div class="header-left">
-        <h1 class="app-title">💬 BeyondChats</h1>
-      </div>
-
-      <div class="header-center">
-        <div class="ai-selector">
-          <div
-            v-for="provider in providers"
-            :key="provider.id"
-            class="ai-badge"
-            :class="{ selected: selectedProviders.includes(provider.id) }"
-            @click="toggleProvider(provider.id)"
-          >
-            <img :src="provider.icon" :alt="provider.name" class="badge-icon" />
-            <span class="badge-label">{{ provider.name }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="header-right">
-        <el-button
-          type="primary"
-          icon="Setting"
-          circle
-          @click="goToSettings"
-        />
-      </div>
-    </div>
-
-    <!-- 主要内容区域 -->
-    <div class="main-content">
-      <!-- 统一输入区域 -->
-      <div class="input-section">
-        <UnifiedInput
-          v-model="currentMessage"
-          :selected-providers="selectedProviders"
-          @send="handleSendMessage"
-        />
-      </div>
-
-      <!-- AI卡片网格 -->
-      <div class="cards-grid" :style="gridStyle">
-        <AICard
-          v-for="provider in visibleProviders"
-          :key="provider.id"
-          :provider="provider"
-          :config="getCardConfig(provider.id)"
-          class="card-item"
-        />
-      </div>
-    </div>
-
-    <!-- 设置模态框 -->
-    <SettingsModal v-if="showSettings" @close="showSettings = false" />
+  <div id="app">
+    <AppLayout>
+      <router-view />
+    </AppLayout>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useAppStore, useLayoutStore } from '@/stores';
-import UnifiedInput from '@/components/chat/UnifiedInput.vue';
-import AICard from '@/components/chat/AICard.vue';
-import SettingsModal from '@/components/SettingsModal.vue';
+import { onMounted } from 'vue'
+import AppLayout from './components/layout/AppLayout.vue'
+import { useAppStore, useLayoutStore } from './stores'
 
-const appStore = useAppStore();
-const layoutStore = useLayoutStore();
+const appStore = useAppStore()
+const layoutStore = useLayoutStore()
 
-// 响应式数据
-const showSettings = ref(false);
-const providers = computed(() => appStore.providers);
-const selectedProviders = computed(() => appStore.selectedProviders);
-const currentMessage = computed({
-  get: () => appStore.currentMessage,
-  set: (val) => {
-    appStore.currentMessage = val;
-  },
-});
-
-// 可见的 providers（被选中或启用的）
-const visibleProviders = computed(() => {
-  return providers.value.filter(provider => {
-    const config = layoutStore.getCardConfig(provider.id);
-    return provider.isEnabled && config.isVisible && !config.isHidden;
-  });
-});
-
-// 网格样式
-const gridStyle = computed(() => {
-  const { columns, gap } = layoutStore.gridSettings;
-  return {
-    display: 'grid',
-    gridTemplateColumns: `repeat(${columns}, 1fr)`,
-    gap: `${gap}px`,
-    padding: `${gap}px`,
-    alignItems: 'start',
-  };
-});
-
-// 切换 provider 选择
-const toggleProvider = (providerId: string) => {
-  const provider = appStore.getProvider(providerId);
-  if (provider) {
-    provider.isEnabled = !provider.isEnabled;
-    appStore.toggleProviderSelection(providerId);
-  }
-};
-
-// 获取卡片配置
-const getCardConfig = (providerId: string) => {
-  return layoutStore.getCardConfig(providerId);
-};
-
-// 发送消息
-const handleSendMessage = async (message: string) => {
-  // 广播消息到所有选中的 provider
-  const aiCardRefs = document.querySelectorAll('.ai-card');
-  // 具体的消息发送逻辑可以在这里实现
-  console.log('Sending message:', message, 'to providers:', selectedProviders.value);
-};
-
-// 前往设置页面
-const goToSettings = () => {
-  showSettings.value = true;
-};
-
-// 响应式布局
-const handleResize = () => {
-  layoutStore.updateWindowSize(window.innerWidth, window.innerHeight);
-};
-
-// 生命周期
-onMounted(() => {
-  // 初始化布局
-  layoutStore.updateWindowSize(window.innerWidth, window.innerHeight);
-  layoutStore.initializeCardConfigs(providers.value.map(p => p.id));
-  layoutStore.loadLayoutConfig();
-
-  // 监听窗口大小变化
-  window.addEventListener('resize', handleResize);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize);
-  layoutStore.saveLayoutConfig();
-});
+// 应用初始化
+onMounted(async() => {
+  await appStore.initializeApp()
+  // 加载布局配置，确保列数等设置在应用启动时被正确恢复
+  layoutStore.loadLayoutConfig()
+})
 </script>
 
-<style scoped lang="css">
-.app-container {
-  width: 100%;
+<style>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: #f5f7fa;
-}
-
-/* 顶部导航栏 */
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
-  background: #fff;
-  border-bottom: 1px solid #ebeef5;
-  gap: 20px;
-  flex-shrink: 0;
-}
-
-.header-left {
-  min-width: 150px;
-}
-
-.app-title {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #1f2937;
+  padding: 0;
 }
 
-.header-center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  min-width: 0;
+* {
+  box-sizing: border-box;
 }
 
-.ai-selector {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-  max-height: 50px;
-  overflow-y: auto;
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
 }
 
-.ai-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: #f0f2f5;
-  border: 2px solid transparent;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  user-select: none;
-  white-space: nowrap;
+/* Element Plus 主题变量覆盖 */
+:root {
+  --el-color-primary: #409eff;
+  --el-color-primary-light-3: #79bbff;
+  --el-color-primary-light-5: #a0cfff;
+  --el-color-primary-light-7: #c6e2ff;
+  --el-color-primary-light-8: #d9ecff;
+  --el-color-primary-light-9: #ecf5ff;
+  --el-color-primary-dark-2: #337ecc;
+  --el-border-radius-base: 6px;
+  --el-border-radius-small: 4px;
 }
 
-.ai-badge:hover {
-  background: #e6e8eb;
+/* 深色模式主题变量 */
+.dark-mode {
+  --el-bg-color: #1a1a1a;
+  --el-bg-color-page: #0a0a0a;
+  --el-bg-color-overlay: #1d1e1f;
+  --el-text-color-primary: #e5e5e5;
+  --el-text-color-regular: #cfcfcf;
+  --el-text-color-secondary: #a3a6ad;
+  --el-text-color-placeholder: #8d9095;
+  --el-text-color-disabled: #6c6e72;
+  --el-border-color: #4c4d4f;
+  --el-border-color-light: #414243;
+  --el-border-color-lighter: #363637;
+  --el-border-color-extra-light: #2b2b2c;
+  --el-border-color-dark: #58585b;
+  --el-border-color-darker: #636466;
+  --el-fill-color: #303133;
+  --el-fill-color-light: #262727;
+  --el-fill-color-lighter: #1d1d1d;
+  --el-fill-color-extra-light: #191919;
+  --el-fill-color-dark: #39393a;
+  --el-fill-color-darker: #424243;
+  --el-fill-color-blank: transparent;
+  --el-box-shadow: 0px 12px 32px 4px rgba(0, 0, 0, 0.36), 0px 8px 20px rgba(0, 0, 0, 0.72);
+  --el-box-shadow-light: 0px 0px 12px rgba(0, 0, 0, 0.72);
+  --el-box-shadow-lighter: 0px 0px 6px rgba(0, 0, 0, 0.72);
+  --el-box-shadow-dark:
+    0px 16px 48px 16px rgba(0, 0, 0, 0.72), 0px 12px 32px rgba(0, 0, 0, 0.72), 0px 8px 16px -8px rgba(0, 0, 0, 0.72);
 }
 
-.ai-badge.selected {
-  background: #409eff;
-  border-color: #0a66c2;
-  color: #fff;
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.badge-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
+::-webkit-scrollbar-track {
+  background: var(--el-fill-color-lighter);
+  border-radius: 4px;
 }
 
-.badge-label {
-  font-size: 13px;
-  font-weight: 500;
+::-webkit-scrollbar-thumb {
+  background: var(--el-border-color-dark);
+  border-radius: 4px;
 }
 
-.header-right {
-  min-width: 50px;
-  display: flex;
-  justify-content: flex-end;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--el-border-color-darker);
 }
 
-/* 主要内容区域 */
-.main-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  gap: 12px;
-  padding: 8px;
+/* 动画效果 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-.input-section {
-  flex-shrink: 0;
-  padding: 0 8px;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
-.cards-grid {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 0;
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease;
 }
 
-.card-item {
-  width: 100%;
-  min-width: 300px;
+.slide-enter-from {
+  transform: translateX(-100%);
 }
 
-/* 响应式布局 */
-@media (max-width: 1400px) {
-  .app-header {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .header-center {
-    width: 100%;
-    order: 3;
-  }
-
-  .ai-selector {
-    justify-content: flex-start;
-  }
-}
-
-@media (max-width: 900px) {
-  .app-header {
-    padding: 8px 12px;
-  }
-
-  .app-title {
-    font-size: 16px;
-  }
+.slide-leave-to {
+  transform: translateX(100%);
 }
 </style>
