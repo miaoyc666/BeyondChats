@@ -293,12 +293,11 @@ const cardStyle = computed(() => {
   const isHidden = props.config.isHidden === true
 
   return {
-    width: `${props.config.size.width}px`,
-    // 修复输入法问题：使用min-height而不是固定height，避免影响输入框
-    height: props.config.isMinimized ? 'auto' : `${props.config.size.height}px`,
+    // 不设定固定宽高，让卡片自动占满网格单元格
+    height: props.config.isMinimized ? 'auto' : '100%',
     minHeight: props.config.isMinimized ? 'auto' : '0',
     zIndex: props.config.zIndex,
-    transition: 'all 0.3s ease',
+    transition: 'opacity 0.3s ease',
     visibility: isHidden ? 'hidden' : 'visible',
     opacity: isHidden ? 0 : 1
   }
@@ -306,22 +305,18 @@ const cardStyle = computed(() => {
 
 const webviewStyle = computed(() => {
   if (!props.config || props.config.isMinimized) return {}
-
-  return {
-    height: `${props.config.size.height - 120}px` // 减去头部和状态栏高度
-  }
+  return {}
 })
 
 const shouldShowWebView = computed(
   () =>
-    // 只有在provider启用且不在初始加载状态时才显示WebView
     props.provider.isEnabled && props.provider.loadingState !== 'idle'
 )
 
 const webviewWidth = computed(() => props.config?.size.width || 800)
 
 const webviewHeight = computed(
-  () => (props.config?.size.height || 800) - 120 // 增加默认高度到800px，减去头部高度
+  () => (props.config?.size.height || 800) - 120
 )
 
 /**

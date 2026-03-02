@@ -73,9 +73,10 @@ const gridStyle = computed(() => {
   return {
     display: 'grid',
     gridTemplateColumns: `repeat(${columns}, 1fr)`,
+    gridAutoRows: '1fr',
     gap: `${gap}px`,
     padding: `${gap}px`,
-    alignItems: 'start' // 让卡片顶部对齐
+    alignItems: 'stretch'
   }
 })
 
@@ -165,7 +166,7 @@ onUnmounted(() => {
 
 <style scoped>
 .chat-view {
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -185,20 +186,15 @@ onUnmounted(() => {
 
 .cards-grid {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 0; /* 允许flex子项收缩 */
-  max-height: calc(100vh - 120px); /* 确保有足够的高度用于滚动 */
+  overflow: hidden;
+  min-height: 0;
 }
 
 .card-item {
   width: 100%;
-  max-width: 100%;
-  min-width: 300px; /* 最小宽度 */
-  height: 100%; /* 根据内容自适应高度 */
-  /* 确保卡片在网格中正确显示 */
-  grid-column: auto;
-  grid-row: auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* 响应式布局 */

@@ -87,15 +87,6 @@
         <!-- 右：按钮区域 -->
         <div class="input-actions">
           <el-button
-            type="success"
-            :icon="Plus"
-            :disabled="loggedInCount === 0"
-            data-testid="new-chat-button"
-            @click="handleNewChat"
-          >
-            新建对话
-          </el-button>
-          <el-button
             type="primary"
             :icon="Position"
             :loading="hasSendingMessages"
