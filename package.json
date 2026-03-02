@@ -1,5 +1,5 @@
 {
-  "name": "chat-all-ai",
+  "name": "beyond-chats",
   "version": "1.1.4",
   "description": "A desktop application to chat with multiple AI models simultaneously",
   "main": "dist-electron/main.js",
@@ -31,7 +31,7 @@
     "ai",
     "chat"
   ],
-  "author": "ChatAllAI Team",
+  "author": "BeyondChats Team",
   "license": "MIT",
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
@@ -65,8 +65,8 @@
     "vue-router": "^4.2.5"
   },
   "build": {
-    "appId": "com.chatallai.app",
-    "productName": "ChatAllAI",
+    "appId": "com.beyondchats.app",
+    "productName": "BeyondChats",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -132,7 +132,7 @@
           ]
         }
       ],
-      "icon": "public/icons/chatallai.png",
+      "icon": "public/icons/beyondchats.png",
       "gatekeeperAssess": false,
       "type": "distribution",
       "hardenedRuntime": true,
@@ -149,7 +149,7 @@
           ]
         }
       ],
-      "icon": "public/icons/chatallai.png"
+      "icon": "public/icons/beyondchats.png"
     },
     "nsis": {
       "oneClick": false,
@@ -160,5 +160,6 @@
     "asar": {
       "smartUnpack": false
     }
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }

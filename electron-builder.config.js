@@ -1,6 +1,6 @@
 module.exports = {
-  appId: 'com.chatallai.app',
-  productName: 'ChatAllAI',
+  appId: 'com.beyondchats.app',
+  productName: 'BeyondChats',
   directories: {
     output: 'dist'
   },
@@ -38,7 +38,7 @@ module.exports = {
         ]
       }
     ],
-    icon: 'public/icons/chatallai.png',
+    icon: 'public/icons/beyondchats.png',
     // 移除不必要的框架和组件
     ignore: [
       '**/Electron Framework.framework/Versions/A/Helpers/**',
@@ -59,7 +59,7 @@ module.exports = {
         ]
       }
     ],
-    icon: 'public/icons/chatallai.png'
+    icon: 'public/icons/beyondchats.png'
   },
   nsis: {
     oneClick: false,

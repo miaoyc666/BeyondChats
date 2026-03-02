@@ -306,7 +306,7 @@ export const useLayoutStore = defineStore('layout', () => {
         cardConfigs: cardConfigs.value,
         gridSettings: gridSettings.value
       }
-      localStorage.setItem('chatallai_layout_config', JSON.stringify(config))
+      localStorage.setItem('beyondchats_layout_config', JSON.stringify(config))
     } catch (error) {
       console.error('Failed to save layout config:', error)
     }
@@ -317,7 +317,7 @@ export const useLayoutStore = defineStore('layout', () => {
    */
   const loadLayoutConfig = (): void => {
     try {
-      const saved = localStorage.getItem('chatallai_layout_config')
+      const saved = localStorage.getItem('beyondchats_layout_config')
       if (saved) {
         const config = JSON.parse(saved)
         if (config.cardConfigs) {

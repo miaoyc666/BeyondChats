@@ -72,7 +72,7 @@ export class WindowManager extends EventEmitter {
       titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
       show: false,
       persistent: true,
-      icon: join(__dirname, '../../public/icons/chatallai.png'),
+      icon: join(__dirname, '../../public/icons/beyondchats.png'),
       // 开发环境显示菜单栏，生产环境隐藏
       autoHideMenuBar: !isDev,
       // 开发环境显示窗口框架，生产环境隐藏窗口框架（无边框窗口）
