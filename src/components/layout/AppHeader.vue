@@ -5,7 +5,7 @@
         <el-icon class="title-icon">
           <ChatDotRound />
         </el-icon>
-        ChatAllAI
+        BeyondChats
       </h1>
     </div>
 
@@ -223,6 +223,7 @@ const toggleFullScreen = (): void => {
 .header-left {
   display: flex;
   align-items: center;
+  padding-left: 60px; /* 避开 macOS 窗口控制按钮（红黄绿） */
   -webkit-app-region: no-drag; /* 左侧区域禁止拖动，允许点击 */
 }
 
